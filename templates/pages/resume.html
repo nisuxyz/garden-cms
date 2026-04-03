@@ -1,0 +1,9 @@
+{% extends "layout/base.html" %}
+{% block title %}Resume{% endblock %}
+{% block content %}
+<h1>Resume</h1>
+{% if content.intro %}    <section>{{ content.intro | safe }}</section>{% endif %}
+{% if content.experience %}<section>{{ content.experience | safe }}</section>{% endif %}
+{% if content.education %} <section>{{ content.education | safe }}</section>{% endif %}
+{% if content.skills %}    <section>{{ content.skills | safe }}</section>{% endif %}
+{% endblock %}
