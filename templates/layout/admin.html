@@ -1,0 +1,42 @@
+{% extends "layout/base.html" %}
+{% block head %}
+<style>
+  .admin-layout {
+    display: grid;
+    grid-template-columns: 180px 1fr;
+    gap: 2rem;
+    align-items: start;
+  }
+  .admin-sidebar nav ul { list-style:none; padding:0; margin:0; }
+  .admin-sidebar nav ul li { margin-bottom: 0.25rem; }
+  .admin-sidebar nav ul li a {
+    display: block;
+    padding: 0.4rem 0.75rem;
+    border-radius: var(--pico-border-radius);
+    text-decoration: none;
+    color: var(--pico-color);
+    font-size: 0.9rem;
+    transition: background var(--pico-transition);
+  }
+  .admin-sidebar nav ul li a:hover {
+    background: var(--pico-card-background-color);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-layout">
+  <aside class="admin-sidebar">
+    <nav>
+      <ul>
+        <li><a href="/admin">Dashboard</a></li>
+        <li><a href="/admin/posts">Posts</a></li>
+        <li><a href="/admin/projects">Projects</a></li>
+        <li><a href="/admin/content">Site Content</a></li>
+        <li><a href="/admin/logout">Log out</a></li>
+      </ul>
+    </nav>
+  </aside>
+  <section>{% block admin_content %}{% endblock %}</section>
+</div>
+{% endblock %}
