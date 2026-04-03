@@ -1,15 +1,57 @@
 # tests/conftest.py
-import pytest
+"""
+Test fixtures.
+
+Uses Piccolo's SQLiteEngine so tests run without Postgres.
+The engine is patched onto every Table class that our app defines
+so queries hit the temporary test DB.
+"""
+import os
+import tempfile
+
 import pytest_asyncio
-from stoolap import AsyncDatabase
+from piccolo.engine.sqlite import SQLiteEngine
 
 from db.schema import init_db
+from db.tables import (
+    Post,
+    PostSlugHistory,
+    Project,
+    ProjectSlugHistory,
+    SiteContent,
+)
+
+_ALL_TABLES = [Post, PostSlugHistory, Project, ProjectSlugHistory, SiteContent]
 
 
 @pytest_asyncio.fixture
-async def db():
-    """In-memory async Stoolap database with schema applied."""
-    database = await AsyncDatabase.open(":memory:")
-    await init_db(database)
-    yield database
-    await database.close()
+async def engine():
+    """Create a file-backed SQLite engine for testing.
+
+    We use a temp file rather than :memory: because Piccolo's
+    SQLiteEngine opens a new connection per query, and each
+    :memory: connection is a *separate* database.
+    """
+    tmp = tempfile.NamedTemporaryFile(suffix=".db", delete=False)
+    tmp.close()
+
+    test_engine = SQLiteEngine(path=tmp.name)
+
+    # Point every content table at this engine
+    for tbl in _ALL_TABLES:
+        tbl._meta._db = test_engine  # type: ignore[attr-defined]
+
+    # Create tables — parents before children (FK deps)
+    for tbl in _ALL_TABLES:
+        await tbl.create_table(if_not_exists=True)
+
+    # Seed default content
+    await init_db()
+
+    yield test_engine
+
+    # Cleanup
+    try:
+        os.unlink(tmp.name)
+    except OSError:
+        pass

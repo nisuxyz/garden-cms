@@ -5,14 +5,12 @@ from pathlib import Path
 from dotenv import load_dotenv
 from litestar import Litestar, Response
 from litestar.contrib.jinja import JinjaTemplateEngine
-from litestar.di import Provide
 from litestar.middleware.session.client_side import CookieBackendConfig
 from litestar.plugins.htmx import HTMXPlugin
 from litestar.static_files.config import StaticFilesConfig
 from litestar.template.config import TemplateConfig
-from stoolap import AsyncDatabase
 
-from db.connection import db_lifespan, provide_db
+from db.connection import db_lifespan
 from routes.admin import admin_router
 from routes.blog import blog_router
 from routes.pages import pages_router
@@ -46,7 +44,6 @@ async def add_security_headers(response: Response) -> Response:
 app = Litestar(
     route_handlers=[pages_router, blog_router, projects_router, admin_router],
     lifespan=[db_lifespan],
-    dependencies={"db": Provide(provide_db)},
     template_config=TemplateConfig(
         directory=Path("templates"),
         engine=JinjaTemplateEngine,

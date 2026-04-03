@@ -1,7 +1,7 @@
 [project]
-name = "itsnisuxyz-bussin"
-version = "0.1.0"
-description = "Personal site to showcase life. Written in python, backed by rust. (litestar + stoolap)"
+name = "itsnisuxyz-garden"
+version = "0.2.0"
+description = "Personal site to showcase life. Written in python. (litestar + piccolo + postgres)"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
@@ -9,11 +9,18 @@ dependencies = [
     "uvicorn[standard]>=0.34.0",
     "markdown-it-py>=4.0.0",
     "python-dotenv>=1.2.2",
-    "stoolap-python>=0.4.0",
+    "piccolo[postgres]>=1.0.0",
+    "piccolo_api>=1.0.0",
 ]
 
 [dependency-groups]
-dev = ["pytest>=9.0.2", "pytest-asyncio>=1.0.0", "httpx>=0.28.0"]
+dev = [
+    "pytest>=9.0.2",
+    "pytest-asyncio>=1.0.0",
+    "httpx>=0.28.0",
+    "piccolo[sqlite]",
+    "aiosqlite>=0.22.1",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

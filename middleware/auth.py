@@ -9,8 +9,10 @@ _LOGIN_PATH = "/admin/login"
 def admin_guard(connection: ASGIConnection, _: BaseRouteHandler) -> None:
     """
     Guard for admin routes.
-    Raises NotAuthorizedException if the session lacks admin_authenticated.
-    The login route itself is excluded by not applying this guard to it.
+
+    Checks the Litestar session cookie for ``admin_authenticated``.
+    This works for both the legacy ADMIN_PASSWORD flow *and* the
+    Piccolo BaseUser flow — both set the same session flag on login.
     """
     if not connection.session.get("admin_authenticated"):
         raise NotAuthorizedException(

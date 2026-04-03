@@ -1,32 +1,29 @@
 # db/connection.py
-import os
+"""
+Database lifecycle management for Piccolo + Litestar.
+
+Provides an async lifespan context-manager that opens/closes the
+Piccolo connection pool and ensures tables + seed data exist.
+"""
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 from litestar import Litestar
-from litestar.datastructures import State
-from stoolap import AsyncDatabase
+from piccolo.engine.postgres import PostgresEngine
 
 from db.schema import init_db
 
 
 @asynccontextmanager
 async def db_lifespan(app: Litestar) -> AsyncGenerator[None, None]:
-    """Open the AsyncDatabase on startup, close it on shutdown."""
-    url = os.getenv("DATABASE_URL", "./data/site.db")
-    if url != ":memory:" and not url.startswith("file://"):
-        parent = os.path.dirname(url)
-        if parent:
-            os.makedirs(parent, exist_ok=True)
-    db = await AsyncDatabase.open(url)
-    app.state.db = db
-    await init_db(db)
+    """Start the Piccolo connection pool on startup, close on shutdown."""
+    from piccolo_conf import DB  # noqa: WPS433 — deferred to allow env loading
+
+    engine: PostgresEngine = DB
+
+    await engine.start_connection_pool()
     try:
+        await init_db()
         yield
     finally:
-        await db.close()
-
-
-async def provide_db(state: State) -> AsyncDatabase:
-    """Litestar dependency — provides the AsyncDatabase from app state."""
-    return state.db
+        await engine.close_connection_pool()

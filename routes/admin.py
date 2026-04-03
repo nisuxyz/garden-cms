@@ -2,6 +2,7 @@
 import hmac
 import json
 import os
+from datetime import datetime, timezone
 from typing import Annotated
 
 from litestar import Router, get, post
@@ -10,10 +11,25 @@ from litestar.exceptions import NotFoundException
 from litestar.params import Body
 from litestar.plugins.htmx import HTMXRequest
 from litestar.response import Redirect, Response, Template
-from stoolap import AsyncDatabase
 
 from db.schema import get_content, parse_tags, render_md
+from db.tables import (
+    Post,
+    PostSlugHistory,
+    Project,
+    ProjectSlugHistory,
+    SiteContent,
+)
 from middleware.auth import admin_guard
+
+# Optional: attempt to import Piccolo's BaseUser for the enhanced auth path.
+# Falls back gracefully to env-var auth when piccolo user tables aren't available.
+try:
+    from piccolo.apps.user.tables import BaseUser
+
+    _HAS_BASEUSER = True
+except Exception:  # pragma: no cover
+    _HAS_BASEUSER = False
 
 
 # ── Auth ───────────────────────────────────────────────────
@@ -29,11 +45,30 @@ async def login_submit(
     data: Annotated[dict, Body(media_type=RequestEncodingType.URL_ENCODED)],
 ) -> Template | Redirect:
     password = (data.get("password") or "").strip()
-    admin_pw = os.getenv("ADMIN_PASSWORD", "")
-    if password and admin_pw and hmac.compare_digest(password, admin_pw):
+    username = (data.get("username") or "").strip()
+
+    authenticated = False
+
+    # Path 1: Piccolo BaseUser (preferred when available)
+    if _HAS_BASEUSER and username:
+        user_id = await BaseUser.login(username=username, password=password)
+        if user_id is not None:
+            authenticated = True
+
+    # Path 2: Legacy env-var password (fallback)
+    if not authenticated:
+        admin_pw = os.getenv("ADMIN_PASSWORD", "")
+        if password and admin_pw and hmac.compare_digest(password, admin_pw):
+            authenticated = True
+
+    if authenticated:
         request.set_session({"admin_authenticated": True})
         return Redirect(path="/admin")
-    return Template(template_name="pages/admin/login.html", context={"error": "Invalid password."})
+
+    return Template(
+        template_name="pages/admin/login.html",
+        context={"error": "Invalid credentials."},
+    )
 
 
 @post("/logout")
@@ -45,25 +80,35 @@ async def logout(request: HTMXRequest) -> Redirect:
 # ── Dashboard ──────────────────────────────────────────────
 
 @get("/")
-async def dashboard(db: AsyncDatabase) -> Template:
-    post_count = (await db.query_one("SELECT COUNT(*) as n FROM posts") or {}).get("n", 0)
-    project_count = (await db.query_one("SELECT COUNT(*) as n FROM projects") or {}).get("n", 0)
+async def dashboard() -> Template:
+    post_rows = await Post.select(Post.id).output(as_list=True)
+    project_rows = await Project.select(Project.id).output(as_list=True)
     return Template(
         template_name="pages/admin/dashboard.html",
-        context={"post_count": post_count, "project_count": project_count, "view": "overview"},
+        context={
+            "post_count": len(post_rows),
+            "project_count": len(project_rows),
+            "view": "overview",
+        },
     )
 
 
 # ── Posts ──────────────────────────────────────────────────
 
 @get("/posts")
-async def posts_list(db: AsyncDatabase) -> Template:
-    rows = await db.query(
-        "SELECT id, title, slug, published, created_at FROM posts ORDER BY created_at DESC"
-    ) or []
+async def posts_list() -> Template:
+    rows = await (
+        Post.select(Post.id, Post.title, Post.slug, Post.published, Post.created_at)
+        .order_by(Post.created_at, ascending=False)
+    )
     return Template(
         template_name="pages/admin/dashboard.html",
-        context={"posts": rows, "view": "posts", "post_count": len(rows), "project_count": 0},
+        context={
+            "posts": rows,
+            "view": "posts",
+            "post_count": len(rows),
+            "project_count": 0,
+        },
     )
 
 
@@ -74,7 +119,6 @@ async def posts_new() -> Template:
 
 @post("/posts")
 async def posts_create(
-    db: AsyncDatabase,
     data: Annotated[dict, Body(media_type=RequestEncodingType.URL_ENCODED)],
 ) -> Redirect:
     title = (data.get("title") or "").strip()
@@ -84,30 +128,32 @@ async def posts_create(
     tags_raw = (data.get("tags") or "").strip()
     published = data.get("published") == "on"
     tags = [t.strip() for t in tags_raw.split(",") if t.strip()]
-    await db.execute(
-        "INSERT INTO posts (title, slug, summary, body, tags, published) "
-        "VALUES ($1,$2,$3,$4,$5,$6)",
-        [title, slug, summary, body, json.dumps(tags), published],
-    )
+    await Post(
+        title=title,
+        slug=slug,
+        summary=summary,
+        body=body,
+        tags=tags,
+        published=published,
+    ).save()
     return Redirect(path="/admin/posts")
 
 
 @get("/posts/{post_id:int}/edit")
-async def posts_edit(post_id: int, db: AsyncDatabase) -> Template:
-    post = await db.query_one("SELECT * FROM posts WHERE id = $1", [post_id])
-    if not post:
+async def posts_edit(post_id: int) -> Template:
+    row = await Post.select().where(Post.id == post_id).first()
+    if not row:
         raise NotFoundException()
-    post = {**post, "tags": parse_tags(post.get("tags", "[]"))}
-    return Template(template_name="pages/admin/post_edit.html", context={"post": post})
+    row["tags"] = parse_tags(row.get("tags", []))
+    return Template(template_name="pages/admin/post_edit.html", context={"post": row})
 
 
 @post("/posts/{post_id:int}/edit")
 async def posts_update(
     post_id: int,
-    db: AsyncDatabase,
     data: Annotated[dict, Body(media_type=RequestEncodingType.URL_ENCODED)],
 ) -> Redirect:
-    existing = await db.query_one("SELECT slug FROM posts WHERE id = $1", [post_id])
+    existing = await Post.select(Post.slug).where(Post.id == post_id).first()
     if not existing:
         raise NotFoundException()
     title = (data.get("title") or "").strip()
@@ -119,22 +165,25 @@ async def posts_update(
     tags = [t.strip() for t in tags_raw.split(",") if t.strip()]
     old_slug = existing["slug"]
     if new_slug != old_slug:
-        await db.execute(
-            "INSERT INTO post_slug_history (post_id, slug) VALUES ($1, $2)",
-            [post_id, old_slug],
-        )
-    await db.execute(
-        "UPDATE posts SET title=$1, slug=$2, summary=$3, body=$4, tags=$5, "
-        "published=$6, updated_at=CURRENT_TIMESTAMP WHERE id=$7",
-        [title, new_slug, summary, body, json.dumps(tags), published, post_id],
-    )
+        await PostSlugHistory(post=post_id, slug=old_slug).save()
+    await Post.update(
+        {
+            Post.title: title,
+            Post.slug: new_slug,
+            Post.summary: summary,
+            Post.body: body,
+            Post.tags: tags,
+            Post.published: published,
+            Post.updated_at: datetime.now(timezone.utc),
+        }
+    ).where(Post.id == post_id)
     return Redirect(path="/admin/posts")
 
 
 @post("/posts/{post_id:int}/delete")
-async def posts_delete(post_id: int, request: HTMXRequest, db: AsyncDatabase) -> Response | Redirect:
-    await db.execute("DELETE FROM post_slug_history WHERE post_id = $1", [post_id])
-    await db.execute("DELETE FROM posts WHERE id = $1", [post_id])
+async def posts_delete(post_id: int, request: HTMXRequest) -> Response | Redirect:
+    await PostSlugHistory.delete().where(PostSlugHistory.post == post_id)
+    await Post.delete().where(Post.id == post_id)
     if request.htmx:
         return Response(content="", status_code=200)
     return Redirect(path="/admin/posts")
@@ -143,21 +192,30 @@ async def posts_delete(post_id: int, request: HTMXRequest, db: AsyncDatabase) ->
 # ── Projects ───────────────────────────────────────────────
 
 @get("/projects")
-async def projects_list(db: AsyncDatabase) -> Template:
-    rows = await db.query(
-        "SELECT id, title, slug, published, featured FROM projects ORDER BY created_at DESC"
-    ) or []
-    return Template(template_name="pages/admin/project_list.html", context={"projects": rows})
+async def projects_list() -> Template:
+    rows = await (
+        Project.select(
+            Project.id, Project.title, Project.slug,
+            Project.published, Project.featured,
+        )
+        .order_by(Project.created_at, ascending=False)
+    )
+    return Template(
+        template_name="pages/admin/project_list.html",
+        context={"projects": rows},
+    )
 
 
 @get("/projects/new")
 async def projects_new() -> Template:
-    return Template(template_name="pages/admin/project_edit.html", context={"project": None})
+    return Template(
+        template_name="pages/admin/project_edit.html",
+        context={"project": None},
+    )
 
 
 @post("/projects")
 async def projects_create(
-    db: AsyncDatabase,
     data: Annotated[dict, Body(media_type=RequestEncodingType.URL_ENCODED)],
 ) -> Redirect:
     title = (data.get("title") or "").strip()
@@ -170,30 +228,40 @@ async def projects_create(
     featured = data.get("featured") == "on"
     published = data.get("published") == "on"
     tags = [t.strip() for t in tags_raw.split(",") if t.strip()]
-    await db.execute(
-        "INSERT INTO projects (title, slug, summary, body, tags, url, repo_url, featured, published) "
-        "VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)",
-        [title, slug, summary, body, json.dumps(tags), url, repo_url, featured, published],
-    )
+    await Project(
+        title=title,
+        slug=slug,
+        summary=summary,
+        body=body,
+        tags=tags,
+        url=url,
+        repo_url=repo_url,
+        featured=featured,
+        published=published,
+    ).save()
     return Redirect(path="/admin/projects")
 
 
 @get("/projects/{project_id:int}/edit")
-async def projects_edit(project_id: int, db: AsyncDatabase) -> Template:
-    project = await db.query_one("SELECT * FROM projects WHERE id = $1", [project_id])
-    if not project:
+async def projects_edit(project_id: int) -> Template:
+    row = await Project.select().where(Project.id == project_id).first()
+    if not row:
         raise NotFoundException()
-    project = {**project, "tags": parse_tags(project.get("tags", "[]"))}
-    return Template(template_name="pages/admin/project_edit.html", context={"project": project})
+    row["tags"] = parse_tags(row.get("tags", []))
+    return Template(
+        template_name="pages/admin/project_edit.html",
+        context={"project": row},
+    )
 
 
 @post("/projects/{project_id:int}/edit")
 async def projects_update(
     project_id: int,
-    db: AsyncDatabase,
     data: Annotated[dict, Body(media_type=RequestEncodingType.URL_ENCODED)],
 ) -> Redirect:
-    existing = await db.query_one("SELECT slug FROM projects WHERE id = $1", [project_id])
+    existing = await (
+        Project.select(Project.slug).where(Project.id == project_id).first()
+    )
     if not existing:
         raise NotFoundException()
     title = (data.get("title") or "").strip()
@@ -208,23 +276,32 @@ async def projects_update(
     tags = [t.strip() for t in tags_raw.split(",") if t.strip()]
     old_slug = existing["slug"]
     if new_slug != old_slug:
-        await db.execute(
-            "INSERT INTO project_slug_history (project_id, slug) VALUES ($1, $2)",
-            [project_id, old_slug],
-        )
-    await db.execute(
-        "UPDATE projects SET title=$1, slug=$2, summary=$3, body=$4, tags=$5, "
-        "url=$6, repo_url=$7, featured=$8, published=$9, updated_at=CURRENT_TIMESTAMP "
-        "WHERE id=$10",
-        [title, new_slug, summary, body, json.dumps(tags), url, repo_url, featured, published, project_id],
-    )
+        await ProjectSlugHistory(project=project_id, slug=old_slug).save()
+    await Project.update(
+        {
+            Project.title: title,
+            Project.slug: new_slug,
+            Project.summary: summary,
+            Project.body: body,
+            Project.tags: tags,
+            Project.url: url,
+            Project.repo_url: repo_url,
+            Project.featured: featured,
+            Project.published: published,
+            Project.updated_at: datetime.now(timezone.utc),
+        }
+    ).where(Project.id == project_id)
     return Redirect(path="/admin/projects")
 
 
 @post("/projects/{project_id:int}/delete")
-async def projects_delete(project_id: int, request: HTMXRequest, db: AsyncDatabase) -> Response | Redirect:
-    await db.execute("DELETE FROM project_slug_history WHERE project_id = $1", [project_id])
-    await db.execute("DELETE FROM projects WHERE id = $1", [project_id])
+async def projects_delete(
+    project_id: int, request: HTMXRequest,
+) -> Response | Redirect:
+    await ProjectSlugHistory.delete().where(
+        ProjectSlugHistory.project == project_id,
+    )
+    await Project.delete().where(Project.id == project_id)
     if request.htmx:
         return Response(content="", status_code=200)
     return Redirect(path="/admin/projects")
@@ -233,26 +310,41 @@ async def projects_delete(project_id: int, request: HTMXRequest, db: AsyncDataba
 # ── Site Content ───────────────────────────────────────────
 
 @get("/content")
-async def content_list(db: AsyncDatabase) -> Template:
-    rows = await db.query(
-        "SELECT content_key as key, value, label, is_markdown, updated_at FROM site_content ORDER BY content_key"
-    ) or []
-    return Template(template_name="pages/admin/content.html", context={"blocks": rows})
+async def content_list() -> Template:
+    rows = await (
+        SiteContent.select(
+            SiteContent.content_key,
+            SiteContent.value,
+            SiteContent.label,
+            SiteContent.is_markdown,
+            SiteContent.updated_at,
+        )
+        .order_by(SiteContent.content_key)
+    )
+    # Template expects "key" not "content_key"
+    blocks = [{**r, "key": r["content_key"]} for r in rows]
+    return Template(
+        template_name="pages/admin/content.html",
+        context={"blocks": blocks},
+    )
 
 
 @post("/content/{key:str}")
 async def content_update(
     key: str,
     request: HTMXRequest,
-    db: AsyncDatabase,
     data: Annotated[dict, Body(media_type=RequestEncodingType.URL_ENCODED)],
 ) -> Response | Redirect:
-    if not await db.query_one("SELECT content_key FROM site_content WHERE content_key = $1", [key]):
+    exists = await SiteContent.exists().where(SiteContent.content_key == key)
+    if not exists:
         raise NotFoundException()
     value = (data.get("value") or "").strip()
-    await db.execute(
-        "UPDATE site_content SET value=$1, updated_at=CURRENT_TIMESTAMP WHERE content_key=$2",
-        [value, key],
+    await (
+        SiteContent.update({
+            SiteContent.value: value,
+            SiteContent.updated_at: datetime.now(timezone.utc),
+        })
+        .where(SiteContent.content_key == key)
     )
     if request.htmx:
         safe_id = key.replace(".", "-")
@@ -274,5 +366,9 @@ _guarded_handlers = [
     projects_update, projects_delete, content_list, content_update,
 ]
 
-_guarded_router = Router(path="/", route_handlers=_guarded_handlers, guards=[admin_guard])
-admin_router = Router(path="/admin", route_handlers=[*_public_handlers, _guarded_router])
+_guarded_router = Router(
+    path="/", route_handlers=_guarded_handlers, guards=[admin_guard],
+)
+admin_router = Router(
+    path="/admin", route_handlers=[*_public_handlers, _guarded_router],
+)
