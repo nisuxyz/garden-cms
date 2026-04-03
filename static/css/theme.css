@@ -1,0 +1,113 @@
+/* ============================================================
+   Mycelium Theme — PicoCSS variable overrides
+   Concept: calm organic tones + cool technological accents.
+   All colors use --pico-color-* tokens.
+   ============================================================ */
+
+:root {
+  --pico-border-radius: 0.5rem;
+  --pico-font-family-sans-serif:
+    system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --pico-font-family-monospace:
+    "SFMono-Regular", "Consolas", "Liberation Mono", Menlo, monospace;
+  --pico-transition: 150ms ease;
+}
+
+/* ── Light theme ─────────────────────────────────────────── */
+[data-theme="light"],
+:root:not([data-theme="dark"]) {
+  --pico-primary:            var(--pico-color-jade-550);
+  --pico-primary-background: var(--pico-color-jade-550);
+  --pico-primary-hover:      var(--pico-color-jade-600);
+  --pico-primary-inverse:    #ffffff;
+
+  --pico-secondary:            var(--pico-color-azure-600);
+  --pico-secondary-background: var(--pico-color-azure-600);
+  --pico-secondary-hover:      var(--pico-color-azure-700);
+  --pico-secondary-inverse:    #ffffff;
+
+  --pico-background-color:      var(--pico-color-slate-50);
+  --pico-card-background-color: #ffffff;
+  --pico-card-border-color:     var(--pico-color-slate-200);
+
+  --pico-color:              var(--pico-color-slate-900);
+  --pico-muted-color:        var(--pico-color-slate-500);
+  --pico-muted-border-color: var(--pico-color-slate-200);
+}
+
+/* ── Dark theme ──────────────────────────────────────────── */
+[data-theme="dark"] {
+  --pico-primary:            var(--pico-color-jade-400);
+  --pico-primary-background: var(--pico-color-jade-400);
+  --pico-primary-hover:      var(--pico-color-jade-500);
+  --pico-primary-inverse:    var(--pico-color-slate-950);
+
+  --pico-secondary:            var(--pico-color-azure-400);
+  --pico-secondary-background: var(--pico-color-azure-400);
+  --pico-secondary-hover:      var(--pico-color-azure-500);
+  --pico-secondary-inverse:    var(--pico-color-slate-950);
+
+  --pico-background-color:      var(--pico-color-slate-950);
+  --pico-card-background-color: var(--pico-color-slate-900);
+  --pico-card-border-color:     var(--pico-color-slate-800);
+
+  --pico-color:              var(--pico-color-slate-100);
+  --pico-muted-color:        var(--pico-color-slate-400);
+  --pico-muted-border-color: var(--pico-color-slate-800);
+}
+
+/* ── Components ──────────────────────────────────────────── */
+
+article {
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  transition: box-shadow var(--pico-transition);
+}
+article:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.06);
+}
+
+/* Tag pills — azure accent, monospace */
+.tag {
+  display: inline-block;
+  padding: 0.1rem 0.55rem;
+  border-radius: 999px;
+  background-color: var(--pico-secondary-background);
+  color: var(--pico-secondary-inverse);
+  font-family: var(--pico-font-family-monospace);
+  font-size: 0.72rem;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+/* Muted metadata — dates, etc. */
+.meta {
+  color: var(--pico-muted-color);
+  font-family: var(--pico-font-family-monospace);
+  font-size: 0.8rem;
+}
+
+/* Hero — generous vertical rhythm */
+.hero { padding: 4rem 0 3rem; }
+.hero h1 {
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-weight: 700;
+  line-height: 1.15;
+  margin-bottom: 0.75rem;
+}
+.hero p {
+  font-size: 1.2rem;
+  color: var(--pico-muted-color);
+  max-width: 48ch;
+}
+
+/* Theme toggle */
+[data-theme-toggle] {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  font-size: 1.1rem;
+  color: var(--pico-muted-color);
+  transition: color var(--pico-transition);
+}
+[data-theme-toggle]:hover { color: var(--pico-color); }
