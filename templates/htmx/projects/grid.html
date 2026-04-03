@@ -1,0 +1,6 @@
+{% for project in projects %}{% include "partials/project_card.html" %}{% endfor %}
+{% if has_more %}
+<button hx-get="/projects/feed?page={{ next_page }}" hx-target="this" hx-swap="outerHTML">
+  Load more
+</button>
+{% endif %}
