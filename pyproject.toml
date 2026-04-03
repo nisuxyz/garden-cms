@@ -1,0 +1,17 @@
+[project]
+name = "itsnisuxyz-bussin"
+version = "0.1.0"
+description = "Personal site to showcase life. Written in python, backed by rust. (bustapi + stoolap)"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "bustapi>=0.10.3",
+    "markdown-it-py>=4.0.0",
+    "python-dotenv>=1.2.2",
+    "stoolap-python>=0.4.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+]
