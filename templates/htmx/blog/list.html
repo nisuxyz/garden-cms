@@ -1,0 +1,6 @@
+{% for post in posts %}{% include "partials/blog_card.html" %}{% endfor %}
+{% if has_more %}
+<button hx-get="/blog/feed?page={{ next_page }}" hx-target="this" hx-swap="outerHTML">
+  Load more
+</button>
+{% endif %}
