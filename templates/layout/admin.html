@@ -9,7 +9,8 @@
   }
   .admin-sidebar nav ul { list-style:none; padding:0; margin:0; }
   .admin-sidebar nav ul li { margin-bottom: 0.25rem; }
-  .admin-sidebar nav ul li a {
+  .admin-sidebar nav ul li a,
+  .admin-sidebar .logout-form button {
     display: block;
     padding: 0.4rem 0.75rem;
     border-radius: var(--pico-border-radius);
@@ -18,8 +19,19 @@
     font-size: 0.9rem;
     transition: background var(--pico-transition);
   }
-  .admin-sidebar nav ul li a:hover {
+  .admin-sidebar nav ul li a:hover,
+  .admin-sidebar .logout-form button:hover {
     background: var(--pico-card-background-color);
+  }
+  .admin-sidebar .logout-form {
+    margin: 0;
+  }
+  .admin-sidebar .logout-form button {
+    all: unset;
+    display: block;
+    width: 100%;
+    cursor: pointer;
+    box-sizing: border-box;
   }
 </style>
 {% endblock %}
@@ -33,7 +45,11 @@
         <li><a href="/admin/posts">Posts</a></li>
         <li><a href="/admin/projects">Projects</a></li>
         <li><a href="/admin/content">Site Content</a></li>
-        <li><a href="/admin/logout">Log out</a></li>
+        <li>
+          <form method="post" action="/admin/logout" class="logout-form">
+            <button type="submit">Log out</button>
+          </form>
+        </li>
       </ul>
     </nav>
   </aside>

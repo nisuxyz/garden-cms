@@ -1,10 +1,9 @@
-# main.py
+# app.py
 import os
 from pathlib import Path
 
 from dotenv import load_dotenv
-from jinja2 import select_autoescape
-from litestar import Litestar, Request, Response
+from litestar import Litestar, Response
 from litestar.contrib.jinja import JinjaTemplateEngine
 from litestar.di import Provide
 from litestar.middleware.session.client_side import CookieBackendConfig
@@ -32,8 +31,8 @@ session_config = CookieBackendConfig(secret=_secret_bytes)  # type: ignore[arg-t
 
 # ── Security headers hook ─────────────────────────────────
 
-async def add_security_headers(request: Request, response: Response) -> Response:
-    """after_response hook: security headers + Vary for HTMX."""
+async def add_security_headers(response: Response) -> Response:
+    """after_request hook: security headers + Vary for HTMX."""
     response.headers["Vary"] = "HX-Request"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["X-Content-Type-Options"] = "nosniff"
@@ -57,6 +56,6 @@ app = Litestar(
     ],
     middleware=[session_config.middleware],
     plugins=[HTMXPlugin()],
-    after_response=[add_security_headers],
+    after_request=add_security_headers,
     debug=os.getenv("DEBUG", "false").lower() == "true",
 )

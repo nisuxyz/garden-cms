@@ -13,3 +13,6 @@ wheels/
 # Env and data files
 .env
 data/*.db
+
+# Docs
+docs/

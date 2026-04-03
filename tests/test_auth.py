@@ -1,40 +1,39 @@
 # tests/test_auth.py
-from bustapi.http.response import Response
-from middleware.auth import AdminAuthMiddleware
-from tests.conftest import MockRequest
+import pytest
+from litestar.connection import ASGIConnection
+from litestar.exceptions import NotAuthorizedException
+
+from middleware.auth import admin_guard
 
 
-def test_non_admin_path_passes():
-    mw = AdminAuthMiddleware()
-    assert mw.process_request(MockRequest(path="/blog")) is None
+class _FakeScope:
+    """Minimal scope-like object for testing the guard."""
+
+    def __init__(self, session: dict | None = None):
+        self._session = session or {}
+
+    @property
+    def session(self) -> dict:
+        return self._session
 
 
-def test_login_path_passes():
-    mw = AdminAuthMiddleware()
-    assert mw.process_request(MockRequest(path="/admin/login")) is None
+def _make_connection(session: dict | None = None) -> _FakeScope:
+    return _FakeScope(session)
 
 
-def test_admin_without_session_redirects():
-    mw = AdminAuthMiddleware()
-    result = mw.process_request(MockRequest(path="/admin", session={}))
-    assert result is not None
-    assert result.status_code == 302
-    assert result.headers.get("Location") == "/admin/login"
+def test_guard_raises_without_session():
+    conn = _make_connection({})
+    with pytest.raises(NotAuthorizedException):
+        admin_guard(conn, None)  # type: ignore[arg-type]
 
 
-def test_admin_with_valid_session_passes():
-    mw = AdminAuthMiddleware()
-    req = MockRequest(path="/admin", session={"admin_authenticated": True})
-    assert mw.process_request(req) is None
+def test_guard_passes_with_valid_session():
+    conn = _make_connection({"admin_authenticated": True})
+    # Should not raise
+    admin_guard(conn, None)  # type: ignore[arg-type]
 
 
-def test_admin_posts_without_session_redirects():
-    mw = AdminAuthMiddleware()
-    result = mw.process_request(MockRequest(path="/admin/posts", session={}))
-    assert result is not None and result.status_code == 302
-
-
-def test_process_response_is_passthrough():
-    mw = AdminAuthMiddleware()
-    resp = Response("ok")
-    assert mw.process_response(MockRequest(), resp) is resp
+def test_guard_raises_with_false_session():
+    conn = _make_connection({"admin_authenticated": False})
+    with pytest.raises(NotAuthorizedException):
+        admin_guard(conn, None)  # type: ignore[arg-type]

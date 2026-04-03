@@ -1,20 +1,20 @@
 [project]
 name = "itsnisuxyz-bussin"
 version = "0.1.0"
-description = "Personal site to showcase life. Written in python, backed by rust. (bustapi + stoolap)"
+description = "Personal site to showcase life. Written in python, backed by rust. (litestar + stoolap)"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "bustapi>=0.10.3",
+    "litestar[cryptography,jinja,standard]>=2.16.0",
+    "uvicorn[standard]>=0.34.0",
     "markdown-it-py>=4.0.0",
     "python-dotenv>=1.2.2",
     "stoolap-python>=0.4.0",
 ]
 
 [dependency-groups]
-dev = [
-    "pytest>=9.0.2",
-]
+dev = ["pytest>=9.0.2", "pytest-asyncio>=1.0.0", "httpx>=0.28.0"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+asyncio_mode = "auto"

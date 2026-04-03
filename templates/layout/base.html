@@ -1,19 +1,38 @@
-<!DOCTYPE html>
-<html lang="en" data-theme="auto">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>{% block title %}Personal Site{% endblock %}</title>
-  <link rel="stylesheet"
-    href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.classless.min.css" />
-  <link rel="stylesheet" href="/static/css/theme.css" />
-  <script src="https://cdn.jsdelivr.net/npm/htmx.org@next" defer></script>
-  <script src="https://cdn.jsdelivr.net/npm/alpinejs@3/dist/cdn.min.js" defer></script>
-  {% block head %}{% endblock %}
-</head>
-<body>
-  <header>{% include "partials/nav.html" %}</header>
-  <main>{% block content %}{% endblock %}</main>
-  <footer>{% include "partials/footer.html" %}</footer>
-</body>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <title>{% block title %}Personal Site{% endblock %}</title>
+    <!-- Restore saved theme before any paint to prevent FOUC -->
+    <script>
+      (function () {
+        var saved = localStorage.getItem("theme");
+        if (saved === "light" || saved === "dark") {
+          document.documentElement.setAttribute("data-theme", saved);
+        }
+      })();
+    </script>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.classless.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.colors.min.css"
+    />
+    <link rel="stylesheet" href="/static/css/theme.css" />
+    <script src="https://cdn.jsdelivr.net/npm/htmx.org@next" defer></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/alpinejs@3/dist/cdn.min.js"
+      defer
+    ></script>
+    {% block head %}{% endblock %}
+  </head>
+  <body>
+    <header>{% include "partials/nav.html" %}</header>
+    <main>{% block content %}{% endblock %}</main>
+    <footer>{% include "partials/footer.html" %}</footer>
+  </body>
 </html>

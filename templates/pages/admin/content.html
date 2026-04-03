@@ -17,10 +17,16 @@
     hx-swap="outerHTML"
   >
     {% if block.is_markdown %}
-    <textarea name="value" rows="5">{{ block.value }}</textarea>
+    <label>
+      {{ block.label }}
+      <textarea name="value" rows="5">{{ block.value }}</textarea>
+    </label>
     <small class="meta">Markdown supported.</small>
     {% else %}
-    <input type="text" name="value" value="{{ block.value }}" />
+    <label>
+      {{ block.label }}
+      <input type="text" name="value" value="{{ block.value }}" />
+    </label>
     {% endif %}
     <footer style="display:flex; align-items:center; gap:1rem;">
       <button type="submit">Save</button>

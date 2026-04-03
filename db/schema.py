@@ -2,7 +2,7 @@
 import json
 
 from markdown_it import MarkdownIt
-from stoolap import Database
+from stoolap import AsyncDatabase
 
 _md = MarkdownIt()
 
@@ -66,15 +66,15 @@ _CONTENT_SEEDS = [
 ]
 
 
-def init_db(db: Database) -> None:
+async def init_db(db: AsyncDatabase) -> None:
     """Create tables and seed default site_content rows."""
-    db.exec(_DDL)
+    await db.exec(_DDL)
     for key, value, label, is_markdown in _CONTENT_SEEDS:
-        existing = db.query_one(
+        existing = await db.query_one(
             "SELECT content_key FROM site_content WHERE content_key = $1", [key]
         )
         if not existing:
-            db.execute(
+            await db.execute(
                 "INSERT INTO site_content (content_key, value, label, is_markdown) VALUES ($1, $2, $3, $4)",
                 [key, value, label, is_markdown],
             )
@@ -85,9 +85,9 @@ def render_md(text: str) -> str:
     return _md.render(text)
 
 
-def get_content(db: Database, key: str) -> str:
+async def get_content(db: AsyncDatabase, key: str) -> str:
     """Fetch a site_content value by key. Returns HTML (if markdown) or raw text. Returns '' if not found."""
-    row = db.query_one(
+    row = await db.query_one(
         "SELECT value, is_markdown FROM site_content WHERE content_key = $1", [key]
     )
     if not row:
