@@ -84,7 +84,12 @@ def posts_create():
 @admin_bp.route("/posts/<id>/edit", methods=["GET"])
 def posts_edit(id: str):
     db = get_db()
-    post = db.query_one("SELECT * FROM posts WHERE id = $1", [int(id)])
+    try:
+        post_id = int(id)
+    except ValueError:
+        from bustapi.http.response import Response
+        return Response("Not Found", status=404)
+    post = db.query_one("SELECT * FROM posts WHERE id = $1", [post_id])
     if not post:
         return HTMLResponse("Not Found", status_code=404)
     post = {**post, "tags": parse_tags(post.get("tags", "[]"))}
@@ -94,7 +99,11 @@ def posts_edit(id: str):
 @admin_bp.route("/posts/<id>/edit", methods=["POST"])
 def posts_update(id: str):
     db = get_db()
-    post_id  = int(id)
+    try:
+        post_id = int(id)
+    except ValueError:
+        from bustapi.http.response import Response
+        return Response("Not Found", status=404)
     existing = db.query_one("SELECT slug FROM posts WHERE id = $1", [post_id])
     if not existing:
         return HTMLResponse("Not Found", status_code=404)
@@ -122,7 +131,11 @@ def posts_update(id: str):
 @admin_bp.route("/posts/<id>/delete", methods=["POST"])
 def posts_delete(id: str):
     db = get_db()
-    post_id = int(id)
+    try:
+        post_id = int(id)
+    except ValueError:
+        from bustapi.http.response import Response
+        return Response("Not Found", status=404)
     db.execute("DELETE FROM post_slug_history WHERE post_id = $1", [post_id])
     db.execute("DELETE FROM posts WHERE id = $1", [post_id])
     if request.htmx.is_htmx:
@@ -170,7 +183,12 @@ def projects_create():
 @admin_bp.route("/projects/<id>/edit", methods=["GET"])
 def projects_edit(id: str):
     db = get_db()
-    project = db.query_one("SELECT * FROM projects WHERE id = $1", [int(id)])
+    try:
+        project_id = int(id)
+    except ValueError:
+        from bustapi.http.response import Response
+        return Response("Not Found", status=404)
+    project = db.query_one("SELECT * FROM projects WHERE id = $1", [project_id])
     if not project:
         return HTMLResponse("Not Found", status_code=404)
     project = {**project, "tags": parse_tags(project.get("tags", "[]"))}
@@ -180,7 +198,11 @@ def projects_edit(id: str):
 @admin_bp.route("/projects/<id>/edit", methods=["POST"])
 def projects_update(id: str):
     db = get_db()
-    project_id = int(id)
+    try:
+        project_id = int(id)
+    except ValueError:
+        from bustapi.http.response import Response
+        return Response("Not Found", status=404)
     existing   = db.query_one("SELECT slug FROM projects WHERE id = $1", [project_id])
     if not existing:
         return HTMLResponse("Not Found", status_code=404)
@@ -212,7 +234,11 @@ def projects_update(id: str):
 @admin_bp.route("/projects/<id>/delete", methods=["POST"])
 def projects_delete(id: str):
     db = get_db()
-    project_id = int(id)
+    try:
+        project_id = int(id)
+    except ValueError:
+        from bustapi.http.response import Response
+        return Response("Not Found", status=404)
     db.execute("DELETE FROM project_slug_history WHERE project_id = $1", [project_id])
     db.execute("DELETE FROM projects WHERE id = $1", [project_id])
     if request.htmx.is_htmx:
@@ -234,6 +260,9 @@ def content_list():
 @admin_bp.route("/content/<key>", methods=["POST"])
 def content_update(key: str):
     db = get_db()
+    if not db.query_one("SELECT content_key FROM site_content WHERE content_key = $1", [key]):
+        from bustapi.http.response import Response
+        return Response("Not Found", status=404)
     value = request.form.get("value", "").strip()
     db.execute(
         "UPDATE site_content SET value=$1, updated_at=CURRENT_TIMESTAMP WHERE content_key=$2",
