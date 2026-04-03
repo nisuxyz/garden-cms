@@ -11,6 +11,7 @@
     <code class="meta" style="float:right;">{{ block.key }}</code>
   </header>
   <form
+    method="post" action="/admin/content/{{ block.key }}"
     hx-post="/admin/content/{{ block.key }}"
     hx-target="#saved-{{ block.key | replace('.', '-') }}"
     hx-swap="outerHTML"
