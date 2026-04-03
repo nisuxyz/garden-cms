@@ -16,12 +16,29 @@ app.jinja_options = {"autoescape": select_autoescape(["html", "xml"])}
 # Required for session-based admin auth
 app.secret_key = os.getenv("SECRET_KEY", "dev-secret-change-me")
 
-# Middleware: HTMX first, auth second
-from middleware.htmx import HTMXMiddleware
+# Request/response hooks (BustAPI before_request / after_request)
+from middleware.htmx import HTMXDetails
 from middleware.auth import AdminAuthMiddleware
 
-app.middleware_manager.add(HTMXMiddleware())
-app.middleware_manager.add(AdminAuthMiddleware())
+_auth = AdminAuthMiddleware()
+
+
+@app.before_request
+def _attach_htmx():
+    from bustapi import request
+    request.htmx = HTMXDetails(request)
+
+
+@app.before_request
+def _check_admin_auth():
+    from bustapi import request
+    return _auth.process_request(request)
+
+
+@app.after_request
+def _add_vary(response):
+    response.headers["Vary"] = "HX-Request"
+    return response
 
 # Blueprints
 from routes.pages import pages_bp

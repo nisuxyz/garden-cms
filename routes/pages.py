@@ -1,6 +1,4 @@
 # routes/pages.py
-import json
-
 from bustapi import Blueprint, request
 from bustapi import redirect
 
@@ -65,14 +63,12 @@ def contact_post():
     email   = request.form.get("email", "").strip()
     message = request.form.get("message", "").strip()
 
-    is_htmx = bool(request.headers.get("HX-Request"))
-
     if not (name and email and message):
-        if is_htmx:
-            return render("htmx/contact/error.html", error="All fields are required."), 422
+        if request.htmx.is_htmx:
+            return render("htmx/contact/error.html", status=422, error="All fields are required.")
         return redirect("/contact?error=1")
 
     # TODO: integrate email/notification delivery
-    if is_htmx:
+    if request.htmx.is_htmx:
         return render("htmx/contact/success.html")
     return redirect("/contact?success=1")
