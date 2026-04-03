@@ -1,0 +1,32 @@
+{% extends "layout/admin.html" %}
+{% block title %}{{ "Edit Post" if post else "New Post" }}{% endblock %}
+{% block admin_content %}
+<hgroup>
+  <h2>{{ "Edit Post" if post else "New Post" }}</h2>
+  <p><a href="/admin/posts">← Back to posts</a></p>
+</hgroup>
+<form method="post" action="{{ '/admin/posts/' + post.id|string + '/edit' if post else '/admin/posts' }}">
+  <label>Title<input type="text" name="title" value="{{ post.title if post else '' }}" required /></label>
+  <label>
+    Slug
+    <input type="text" name="slug" value="{{ post.slug if post else '' }}" required />
+    <small>URL: /blog/<em>slug</em>. Changing this preserves the old URL via 301 redirect.</small>
+  </label>
+  <label>Summary<input type="text" name="summary" value="{{ post.summary if post else '' }}" required /></label>
+  <label>
+    Body (Markdown)
+    <textarea name="body" rows="20" required>{{ post.body if post else '' }}</textarea>
+  </label>
+  <label>
+    Tags (comma-separated)
+    <input type="text" name="tags"
+           value="{{ post.tags | join(', ') if post and post.tags else '' }}"
+           placeholder="python, web, personal" />
+  </label>
+  <label>
+    <input type="checkbox" name="published" {{ "checked" if post and post.published else "" }} />
+    Published
+  </label>
+  <button type="submit">{{ "Update post" if post else "Create post" }}</button>
+</form>
+{% endblock %}

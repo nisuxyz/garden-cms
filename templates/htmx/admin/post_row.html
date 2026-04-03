@@ -1,0 +1,18 @@
+<tr id="post-row-{{ post.id }}">
+  <td><a href="/admin/posts/{{ post.id }}/edit">{{ post.title }}</a></td>
+  <td><code>{{ post.slug }}</code></td>
+  <td>{{ "Published" if post.published else "Draft" }}</td>
+  <td>
+    <form
+      method="post" action="/admin/posts/{{ post.id }}/delete"
+      hx-post="/admin/posts/{{ post.id }}/delete"
+      hx-target="#post-row-{{ post.id }}"
+      hx-swap="outerHTML"
+      hx-confirm="Delete this post?"
+      style="display:inline;"
+    >
+      <button type="submit" class="outline secondary"
+              style="padding:0.2rem 0.6rem; font-size:0.8rem;">Delete</button>
+    </form>
+  </td>
+</tr>

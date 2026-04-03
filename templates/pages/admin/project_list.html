@@ -1,0 +1,20 @@
+{% extends "layout/admin.html" %}
+{% block title %}Projects{% endblock %}
+{% block admin_content %}
+<hgroup>
+  <h2>Projects</h2>
+  <p><a href="/admin/projects/new" role="button">New project</a></p>
+</hgroup>
+{% if projects %}
+<table>
+  <thead>
+    <tr><th>Title</th><th>Slug</th><th>Featured</th><th>Status</th><th></th></tr>
+  </thead>
+  <tbody id="projects-table">
+    {% for project in projects %}{% include "htmx/admin/project_row.html" %}{% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p>No projects yet. <a href="/admin/projects/new">Create one →</a></p>
+{% endif %}
+{% endblock %}

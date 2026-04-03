@@ -1,0 +1,19 @@
+<tr id="project-row-{{ project.id }}">
+  <td><a href="/admin/projects/{{ project.id }}/edit">{{ project.title }}</a></td>
+  <td><code>{{ project.slug }}</code></td>
+  <td>{{ "★" if project.featured else "—" }}</td>
+  <td>{{ "Published" if project.published else "Draft" }}</td>
+  <td>
+    <form
+      method="post" action="/admin/projects/{{ project.id }}/delete"
+      hx-post="/admin/projects/{{ project.id }}/delete"
+      hx-target="#project-row-{{ project.id }}"
+      hx-swap="outerHTML"
+      hx-confirm="Delete this project?"
+      style="display:inline;"
+    >
+      <button type="submit" class="outline secondary"
+              style="padding:0.2rem 0.6rem; font-size:0.8rem;">Delete</button>
+    </form>
+  </td>
+</tr>
