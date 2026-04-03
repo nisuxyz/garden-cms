@@ -1,0 +1,22 @@
+<nav>
+  <ul>
+    <li><strong><a href="/" style="text-decoration:none;">nisu</a></strong></li>
+  </ul>
+  <ul>
+    <li><a href="/blog">Blog</a></li>
+    <li><a href="/projects">Projects</a></li>
+    <li><a href="/resume">Resume</a></li>
+    <li><a href="/contact">Contact</a></li>
+    <li>
+      <button
+        data-theme-toggle
+        x-data
+        @click="
+          const html = document.documentElement;
+          html.dataset.theme = html.dataset.theme === 'dark' ? 'light' : 'dark';
+        "
+        aria-label="Toggle theme"
+      >☽</button>
+    </li>
+  </ul>
+</nav>
