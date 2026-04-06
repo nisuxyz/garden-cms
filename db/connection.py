@@ -21,7 +21,7 @@ async def db_lifespan(app: Litestar) -> AsyncGenerator[None, None]:
 
     engine: PostgresEngine = DB
 
-    await engine.start_connection_pool()
+    await engine.start_connection_pool(max_inactive_connection_lifetime=1)
     try:
         await init_db()
         yield
