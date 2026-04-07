@@ -1,5 +1,4 @@
-{% extends "layout/base.html" %}
-{% block head %}
+{% extends "layout/base.html" %} {% block head %}
 <style>
   .admin-layout {
     display: grid;
@@ -7,8 +6,14 @@
     gap: 2rem;
     align-items: start;
   }
-  .admin-sidebar nav ul { list-style:none; padding:0; margin:0; }
-  .admin-sidebar nav ul li { margin-bottom: 0.25rem; }
+  .admin-sidebar nav ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .admin-sidebar nav ul li {
+    margin-bottom: 0.25rem;
+  }
   .admin-sidebar nav ul li a,
   .admin-sidebar .logout-form button {
     display: block;
@@ -34,20 +39,18 @@
     box-sizing: border-box;
   }
 </style>
-{% endblock %}
-
-{% block content %}
+{% endblock %} {% block content %}
 <div class="admin-layout">
   <aside class="admin-sidebar">
     <nav>
       <ul>
-        <li><a href="/admin">Dashboard</a></li>
-        <li><a href="/admin/posts">Posts</a></li>
-        <li><a href="/admin/projects">Projects</a></li>
-        <li><a href="/admin/content">Site Content</a></li>
+        <li><a href="/admin">dashboard</a></li>
+        <li><a href="/admin/posts">posts</a></li>
+        <li><a href="/admin/projects">projects</a></li>
+        <li><a href="/admin/content">site content</a></li>
         <li>
           <form method="post" action="/admin/logout" class="logout-form">
-            <button type="submit">Log out</button>
+            <button type="submit">log out</button>
           </form>
         </li>
       </ul>
