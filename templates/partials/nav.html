@@ -17,27 +17,14 @@
     <li>
       <button
         data-theme-toggle
-        x-data="{
-          dark: false,
-          init() {
-            const saved = localStorage.getItem('theme');
-            if (saved) {
-              this.dark = saved === 'dark';
-            } else {
-              this.dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            }
-          },
-          toggle() {
-            this.dark = !this.dark;
-            const next = this.dark ? 'dark' : 'light';
-            document.documentElement.setAttribute('data-theme', next);
-            localStorage.setItem('theme', next);
-          }
-        }"
-        @click="toggle()"
-        :aria-label="dark ? 'Switch to light mode' : 'Switch to dark mode'"
+        onclick="
+          var d = document.documentElement,
+            t = d.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+          d.setAttribute('data-theme', t);
+          localStorage.setItem('theme', t);
+        "
         title="Toggle theme"
-        x-text="dark ? '☀' : '☽'"
+        aria-label="Toggle theme"
       ></button>
     </li>
   </ul>

@@ -14,8 +14,7 @@
 }
 
 /* ── Light theme ─────────────────────────────────────────── */
-[data-theme="light"],
-:root:not([data-theme="dark"]):not([data-theme]) {
+:root[data-theme="light"] {
   --pico-primary: var(--pico-color-jade-550);
   --pico-primary-background: var(--pico-color-jade-550);
   --pico-primary-hover: var(--pico-color-jade-600);
@@ -35,8 +34,8 @@
   --pico-muted-border-color: var(--pico-color-slate-200);
 }
 
-/* ── Dark theme (manual toggle) ──────────────────────────── */
-[data-theme="dark"] {
+/* ── Dark theme ──────────────────────────────────────────── */
+:root[data-theme="dark"] {
   --pico-primary: var(--pico-color-jade-350);
   --pico-primary-background: var(--pico-color-jade-500);
   --pico-primary-hover: var(--pico-color-jade-450);
@@ -56,29 +55,6 @@
   --pico-muted-border-color: var(--pico-color-slate-800);
 }
 
-/* ── Dark theme (OS preference, no manual toggle yet) ────── */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme]) {
-    --pico-primary: var(--pico-color-jade-350);
-    --pico-primary-background: var(--pico-color-jade-500);
-    --pico-primary-hover: var(--pico-color-jade-450);
-    --pico-primary-inverse: var(--pico-color-slate-950);
-
-    --pico-secondary: var(--pico-color-azure-350);
-    --pico-secondary-background: var(--pico-color-azure-500);
-    --pico-secondary-hover: var(--pico-color-azure-450);
-    --pico-secondary-inverse: var(--pico-color-slate-950);
-
-    --pico-background-color: var(--pico-color-slate-950);
-    --pico-card-background-color: var(--pico-color-slate-900);
-    --pico-card-border-color: var(--pico-color-slate-800);
-
-    --pico-color: var(--pico-color-slate-100);
-    --pico-muted-color: var(--pico-color-slate-400);
-    --pico-muted-border-color: var(--pico-color-slate-800);
-  }
-}
-
 /* ── Components ──────────────────────────────────────────── */
 
 article {
@@ -90,22 +66,12 @@ article:hover {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.06);
 }
 
-[data-theme="dark"] article {
+:root[data-theme="dark"] article {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25), 0 1px 2px rgba(0, 0, 0, 0.20);
 }
 
-[data-theme="dark"] article:hover {
+:root[data-theme="dark"] article:hover {
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35), 0 2px 6px rgba(0, 0, 0, 0.25);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme]) article {
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25), 0 1px 2px rgba(0, 0, 0, 0.20);
-  }
-
-  :root:not([data-theme]) article:hover {
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35), 0 2px 6px rgba(0, 0, 0, 0.25);
-  }
 }
 
 /* Tag pills — azure accent, monospace */
@@ -172,4 +138,12 @@ body>footer {
 
 [data-theme-toggle]:hover {
   color: var(--pico-color);
+}
+
+:root[data-theme="light"] [data-theme-toggle]::before {
+  content: "☽";
+}
+
+:root[data-theme="dark"] [data-theme-toggle]::before {
+  content: "☀";
 }
