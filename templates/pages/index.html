@@ -1,6 +1,5 @@
-{% extends "layout/base.html" %}
-{% block title %}Home{% endblock %}
-{% block content %}
+{% extends "layout/base.html" %} {% block title %}Home{% endblock %} {% block
+content %}
 <section class="hero">
   <h1>{{ content.hero_headline | safe }}</h1>
   <p>{{ content.hero_subtext | safe }}</p>
@@ -8,25 +7,21 @@
 
 {% if content.about %}
 <section>{{ content.about | safe }}</section>
-{% endif %}
-
-{% if posts %}
+{% endif %} {% if posts %}
 <section>
   <hgroup>
-    <h2>Recent writing</h2>
-    <p><a href="/blog">All posts →</a></p>
+    <h2>recent posts</h2>
+    <p><a href="/blog">all posts →</a></p>
   </hgroup>
   {% for post in posts %}{% include "partials/blog_card.html" %}{% endfor %}
 </section>
-{% endif %}
-
-{% if projects %}
+{% endif %} {% if projects %}
 <section>
   <hgroup>
-    <h2>Featured projects</h2>
-    <p><a href="/projects">All projects →</a></p>
+    <h2>featured projects</h2>
+    <p><a href="/projects">all projects →</a></p>
   </hgroup>
-  {% for project in projects %}{% include "partials/project_card.html" %}{% endfor %}
+  {% for project in projects %}{% include "partials/project_card.html" %}{%
+  endfor %}
 </section>
-{% endif %}
-{% endblock %}
+{% endif %} {% endblock %}
