@@ -1,13 +1,9 @@
-{% extends "layout/base.html" %}
-{% block title %}Projects{% endblock %}
-{% block content %}
+{% extends "layout/base.html" %} {% block title %}Projects{% endblock %} {%
+block content %}
 <hgroup>
-  <h1>Projects</h1>
-  <p class="meta">Things I've built, explored, and shipped.</p>
+  <h1>projects</h1>
+  <p class="meta">things i'm building, exploring, and shipping</p>
 </hgroup>
-{% if projects %}
-  {% include "htmx/projects/grid.html" %}
-{% else %}
-  <p>No projects yet. Check back soon.</p>
-{% endif %}
-{% endblock %}
+{% if projects %} {% include "htmx/projects/grid.html" %} {% else %}
+<p>no projects yet. check back soon!</p>
+{% endif %} {% endblock %}

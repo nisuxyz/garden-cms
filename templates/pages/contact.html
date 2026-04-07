@@ -1,19 +1,27 @@
-{% extends "layout/base.html" %}
-{% block title %}Contact{% endblock %}
-{% block content %}
+{% extends "layout/base.html" %} {% block title %}contact{% endblock %} {% block
+content %}
 <hgroup>
-  <h1>Get in touch</h1>
+  <h1>get in touch</h1>
 </hgroup>
-{% if intro %}<p>{{ intro | safe }}</p>{% endif %}
-{% if success %}<p><ins>Message sent! I'll get back to you soon.</ins></p>{% endif %}
-{% if error_msg %}<p><mark>Something went wrong. Please check your details.</mark></p>{% endif %}
+{% if intro %}
+<p>{{ intro | safe }}</p>
+{% endif %} {% if success %}
+<p><ins>message sent! i'll get back to you soon.</ins></p>
+{% endif %} {% if error_msg %}
+<p><mark>something went wrong. please check your details.</mark></p>
+{% endif %}
 
 <section id="contact-area">
   <form hx-post="/contact" hx-target="#contact-area" hx-swap="outerHTML">
-    <input type="text"  name="name"    placeholder="Your name"    required />
-    <input type="email" name="email"   placeholder="Your email"   required />
-    <textarea           name="message" placeholder="Your message" rows="6" required></textarea>
-    <button type="submit">Send message</button>
+    <input type="text" name="name" placeholder="your name" required />
+    <input type="email" name="email" placeholder="your email" required />
+    <textarea
+      name="message"
+      placeholder="your message"
+      rows="6"
+      required
+    ></textarea>
+    <button type="submit">send message</button>
   </form>
 </section>
 {% endblock %}

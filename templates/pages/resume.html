@@ -1,12 +1,17 @@
-{% extends "layout/base.html" %} {% block title %}Resume/CV{% endblock %} {%
+{% extends "layout/base.html" %} {% block title %}resume/cv{% endblock %} {%
 block content %}
-<h1>Resume/CV</h1>
+
+<hgroup>
+  <h1>resume/cv</h1>
+  <p class="meta">where i've been and what i've built</p>
+</hgroup>
+
 {% if content.intro %}
 <section>{{ content.intro | safe }}</section>
 {% endif %} {% if content.experience %}
 <section>{{ content.experience | safe }}</section>
 {% endif %} {% if content.education %}
-<section>{{ content.education | safe }}</section>
+<!-- <section>{{ content.education | safe }}</section> -->
 {% endif %} {% if content.skills %}
 <section>{{ content.skills | safe }}</section>
 {% endif %} {% endblock %}
