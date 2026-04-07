@@ -342,7 +342,6 @@ async def content_update(
     await (
         SiteContent.update({
             SiteContent.value: value,
-            SiteContent.updated_at: datetime.now(timezone.utc),
         })
         .where(SiteContent.content_key == key)
     )

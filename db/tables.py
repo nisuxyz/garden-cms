@@ -1,5 +1,7 @@
 # db/tables.py
 """Piccolo ORM table definitions for site content."""
+from datetime import datetime
+
 from piccolo.columns import (
     JSON,
     Boolean,
@@ -20,8 +22,8 @@ class Post(Table, tablename="posts"):
     body = Text(required=True)
     tags = JSON(default=[])
     published = Boolean(default=False)
-    created_at = Timestamptz(auto_update=False)
-    updated_at = Timestamptz(auto_update=True)
+    created_at = Timestamptz()
+    updated_at = Timestamptz(auto_update=datetime.now)
 
 
 class PostSlugHistory(Table, tablename="post_slug_history"):
@@ -29,7 +31,7 @@ class PostSlugHistory(Table, tablename="post_slug_history"):
 
     post = ForeignKey(references=Post, required=True)
     slug = Varchar(length=255, unique=True, required=True)
-    created_at = Timestamptz(auto_update=False)
+    created_at = Timestamptz()
 
 
 class Project(Table, tablename="projects"):
@@ -44,8 +46,8 @@ class Project(Table, tablename="projects"):
     repo_url = Varchar(length=500, null=True, default=None)
     featured = Boolean(default=False)
     published = Boolean(default=False)
-    created_at = Timestamptz(auto_update=False)
-    updated_at = Timestamptz(auto_update=True)
+    created_at = Timestamptz()
+    updated_at = Timestamptz(auto_update=datetime.now)
 
 
 class ProjectSlugHistory(Table, tablename="project_slug_history"):
@@ -53,7 +55,7 @@ class ProjectSlugHistory(Table, tablename="project_slug_history"):
 
     project = ForeignKey(references=Project, required=True)
     slug = Varchar(length=255, unique=True, required=True)
-    created_at = Timestamptz(auto_update=False)
+    created_at = Timestamptz()
 
 
 class SiteContent(Table, tablename="site_content"):
@@ -63,4 +65,4 @@ class SiteContent(Table, tablename="site_content"):
     value = Text(required=True)
     label = Varchar(length=255, required=True)
     is_markdown = Boolean(default=True)
-    updated_at = Timestamptz(auto_update=True)
+    updated_at = Timestamptz(auto_update=datetime.now)
