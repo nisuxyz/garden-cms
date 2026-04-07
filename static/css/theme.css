@@ -146,10 +146,14 @@ article:hover {
   max-width: 48ch;
 }
 
-/* footer - anchored at bottom */
-footer {
-  position: absolute;
-  bottom: 0;
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+body>footer {
+  margin-top: auto;
   left: 0;
   right: 0;
   text-align: center;
