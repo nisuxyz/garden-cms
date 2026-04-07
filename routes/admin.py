@@ -1,6 +1,7 @@
 # routes/admin.py
 import hmac
 import json
+import logging
 import os
 from datetime import datetime, timezone
 from typing import Annotated
@@ -8,6 +9,7 @@ from typing import Annotated
 from litestar import Router, get, post
 from litestar.enums import RequestEncodingType
 from litestar.exceptions import NotFoundException
+from litestar.middleware.rate_limit import RateLimitConfig
 from litestar.params import Body
 from litestar.plugins.htmx import HTMXRequest
 from litestar.response import Redirect, Response, Template
@@ -21,6 +23,12 @@ from db.tables import (
     SiteContent,
 )
 from middleware.auth import admin_guard
+from middleware.oauth import (
+    check_group_membership,
+    exchange_code,
+    get_authorization_url,
+    oauth_configured,
+)
 
 # Optional: attempt to import Piccolo's BaseUser for the enhanced auth path.
 # Falls back gracefully to env-var auth when piccolo user tables aren't available.
@@ -31,12 +39,17 @@ try:
 except Exception:  # pragma: no cover
     _HAS_BASEUSER = False
 
+_log = logging.getLogger(__name__)
+
 
 # ── Auth ───────────────────────────────────────────────────
 
 @get("/login")
-async def login_page() -> Template:
-    return Template(template_name="pages/admin/login.html", context={"error": None})
+async def login_page(error: str | None = None) -> Template:
+    return Template(
+        template_name="pages/admin/login.html",
+        context={"error": error, "oauth_enabled": oauth_configured()},
+    )
 
 
 @post("/login")
@@ -75,6 +88,46 @@ async def login_submit(
 async def logout(request: HTMXRequest) -> Redirect:
     request.clear_session()
     return Redirect(path="/admin/login")
+
+# ── OAuth ──────────────────────────────────────────────────
+
+@get("/oauth/authorize")
+async def oauth_authorize(request: HTMXRequest) -> Redirect:
+    """Redirect to Pocket ID with PKCE challenge."""
+    url, state, code_verifier = await get_authorization_url()
+    request.set_session({
+        "oauth_state": state,
+        "oauth_code_verifier": code_verifier,
+    })
+    return Redirect(path=url)
+
+
+@get("/oauth/callback")
+async def oauth_callback(request: HTMXRequest, code: str) -> Redirect:
+    """Handle the OAuth callback, exchange code, validate group, set session."""
+    oauth_state = request.query_params.get("state", "")
+    session_state = request.session.get("oauth_state")
+    code_verifier = request.session.get("oauth_code_verifier")
+
+    if not session_state or oauth_state != session_state:
+        _log.warning("OAuth state mismatch")
+        return Redirect(path="/admin/login?error=OAuth+state+mismatch.+Please+try+again.")
+
+    if not code_verifier:
+        return Redirect(path="/admin/login?error=Missing+code+verifier.+Please+try+again.")
+
+    try:
+        userinfo = await exchange_code(code, oauth_state, code_verifier)
+    except Exception:
+        _log.exception("OAuth token exchange failed")
+        return Redirect(path="/admin/login?error=OAuth+login+failed.+Please+try+again.")
+
+    if not check_group_membership(userinfo):
+        _log.warning("User %s not in required group", userinfo.get("sub", "?"))
+        return Redirect(path="/admin/login?error=You+are+not+authorized.")
+
+    request.set_session({"admin_authenticated": True})
+    return Redirect(path="/admin")
 
 
 # ── Dashboard ──────────────────────────────────────────────
@@ -358,7 +411,14 @@ async def content_update(
 # ── Guarded and unguarded handlers ─────────────────────────
 # Login/logout don't require auth; everything else does.
 
-_public_handlers = [login_page, login_submit, logout]
+# Rate-limit the password login endpoint (5 attempts / minute per IP).
+_password_login_router = Router(
+    path="/",
+    route_handlers=[login_submit],
+    middleware=[RateLimitConfig(rate_limit=("minute", 5)).middleware],
+)
+
+_public_handlers = [login_page, logout, _password_login_router, oauth_authorize, oauth_callback]
 _guarded_handlers = [
     dashboard, posts_list, posts_new, posts_create, posts_edit, posts_update,
     posts_delete, projects_list, projects_new, projects_create, projects_edit,
