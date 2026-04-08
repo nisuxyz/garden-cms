@@ -14,7 +14,8 @@ from litestar.params import Body
 from litestar.plugins.htmx import HTMXRequest
 from litestar.response import Redirect, Response, Template
 
-from db.tables import Collection, CollectionItem, CollectionItemSlugHistory, ContentBlock, Page
+from db.tables import Collection, CollectionItem, CollectionItemSlugHistory, ContentBlock, MediaFile, Page, Theme
+from cms.media import MediaError, delete_media, save_upload
 from middleware.auth import admin_guard
 from middleware.oauth import (
     check_group_membership,
@@ -566,6 +567,156 @@ async def items_delete(
     return Redirect(path=f"/admin/collections/{col_id}/items")
 
 
+# ── Media ──────────────────────────────────────────────────
+
+@get("/media")
+async def media_list() -> Template:
+    rows = await (
+        MediaFile.select()
+        .order_by(MediaFile.created_at, ascending=False)
+        .output(as_dict=True)
+    )
+    return Template(template_name="admin/media.html", context={"files": rows})
+
+
+@post("/media/upload")
+async def media_upload(
+    request: HTMXRequest,
+    data: Annotated[dict, Body(media_type=RequestEncodingType.MULTI_PART)],
+) -> Response | Redirect:
+    upload = data.get("file")
+    alt_text = (data.get("alt_text") or "").strip() or None
+
+    if upload is None:
+        if request.htmx:
+            return Response(content="<mark>No file provided</mark>", status_code=422, media_type="text/html")
+        return Redirect(path="/admin/media")
+
+    try:
+        file_data = upload.read() if hasattr(upload, "read") else upload
+        original_name = getattr(upload, "filename", "upload")
+        content_type = getattr(upload, "content_type", "application/octet-stream")
+
+        await save_upload(
+            file_data=file_data,
+            original_name=original_name,
+            content_type=content_type,
+            alt_text=alt_text,
+        )
+    except MediaError as e:
+        if request.htmx:
+            return Response(content=f"<mark>{e}</mark>", status_code=422, media_type="text/html")
+        return Redirect(path="/admin/media")
+
+    return Redirect(path="/admin/media")
+
+
+@post("/media/{media_id:int}/delete")
+async def media_delete(media_id: int, request: HTMXRequest) -> Response | Redirect:
+    await delete_media(media_id)
+    if request.htmx:
+        return Response(content="", status_code=200)
+    return Redirect(path="/admin/media")
+
+
+# ── Themes ─────────────────────────────────────────────────
+
+@get("/themes")
+async def themes_list() -> Template:
+    rows = await Theme.select().order_by(Theme.name).output(as_dict=True)
+    return Template(template_name="admin/themes.html", context={"themes": rows})
+
+
+@get("/themes/new")
+async def themes_new() -> Template:
+    return Template(template_name="admin/theme_edit.html", context={"theme": None})
+
+
+@post("/themes")
+async def themes_create(
+    data: Annotated[dict, Body(media_type=RequestEncodingType.URL_ENCODED)],
+) -> Redirect:
+    name = (data.get("name") or "").strip()
+    slug = (data.get("slug") or "").strip()
+    base_template = (data.get("base_template") or "").strip()
+    css = (data.get("css") or "").strip()
+    active = data.get("active") == "on"
+
+    if active:
+        await Theme.update({Theme.active: False}).where(Theme.active.eq(True))
+
+    await Theme(
+        name=name, slug=slug, base_template=base_template, css=css, active=active,
+    ).save()
+    return Redirect(path="/admin/themes")
+
+
+@get("/themes/{theme_id:int}/edit")
+async def themes_edit(theme_id: int) -> Template:
+    row = await Theme.select().where(Theme.id == theme_id).first().output(as_dict=True)
+    if not row:
+        raise NotFoundException()
+    return Template(template_name="admin/theme_edit.html", context={"theme": row})
+
+
+@post("/themes/{theme_id:int}/edit")
+async def themes_update(
+    theme_id: int,
+    data: Annotated[dict, Body(media_type=RequestEncodingType.URL_ENCODED)],
+) -> Redirect:
+    existing = await Theme.select(Theme.id).where(Theme.id == theme_id).first().output(as_dict=True)
+    if not existing:
+        raise NotFoundException()
+
+    name = (data.get("name") or "").strip()
+    slug = (data.get("slug") or "").strip()
+    base_template = (data.get("base_template") or "").strip()
+    css = (data.get("css") or "").strip()
+    active = data.get("active") == "on"
+
+    if active:
+        await Theme.update({Theme.active: False}).where(
+            Theme.active.eq(True)
+        ).where(Theme.id != theme_id)
+
+    await Theme.update(
+        {
+            Theme.name: name,
+            Theme.slug: slug,
+            Theme.base_template: base_template,
+            Theme.css: css,
+            Theme.active: active,
+            Theme.updated_at: datetime.now(timezone.utc),
+        }
+    ).where(Theme.id == theme_id)
+    return Redirect(path="/admin/themes")
+
+
+@post("/themes/{theme_id:int}/activate")
+async def themes_activate(theme_id: int) -> Redirect:
+    await Theme.update({Theme.active: False}).where(Theme.active.eq(True))
+    await Theme.update({Theme.active: True}).where(Theme.id == theme_id)
+    return Redirect(path="/admin/themes")
+
+
+@post("/themes/{theme_id:int}/delete")
+async def themes_delete(theme_id: int, request: HTMXRequest) -> Response | Redirect:
+    row = await Theme.select(Theme.active).where(Theme.id == theme_id).first().output(as_dict=True)
+    if row and row.get("active"):
+        if request.htmx:
+            return Response(
+                content="<mark>Cannot delete the active theme</mark>",
+                status_code=422,
+                media_type="text/html",
+            )
+        return Redirect(path="/admin/themes")
+
+    await Theme.delete().where(Theme.id == theme_id)
+    if request.htmx:
+        return Response(content="", status_code=200)
+    return Redirect(path="/admin/themes")
+
+
 # ── Guarded and unguarded handlers ─────────────────────────
 
 _password_login_router = Router(
@@ -582,6 +733,9 @@ _guarded_handlers = [
     collections_list, collections_new, collections_create, collections_edit,
     collections_update, collections_delete,
     items_list, items_new, items_create, items_edit, items_update, items_delete,
+    media_list, media_upload, media_delete,
+    themes_list, themes_new, themes_create, themes_edit, themes_update,
+    themes_activate, themes_delete,
 ]
 
 _guarded_router = Router(
