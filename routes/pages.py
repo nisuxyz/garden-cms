@@ -33,6 +33,8 @@ async def homepage() -> Response:
 
 @get("/{slug:path}")
 async def dynamic_page(slug: str) -> Response | Redirect:
+    slug = slug.strip("/")
+
     # 1. Try matching a Page.
     page = await resolve_page(slug)
     if page is not None:
