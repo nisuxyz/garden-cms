@@ -1,16 +1,16 @@
-{% extends "layout/base.html" %} {% block title %}Admin Login{% endblock %} {%
+{% extends "layout/base.html" %} {% block title %}admin login{% endblock %} {%
 block content %}
 <article style="max-width: 400px; margin: 4rem auto">
-  <header><h2>Admin</h2></header>
+  <header><h2>admin</h2></header>
   {% if error %}
   <p><mark>{{ error }}</mark></p>
   {% endif %} {% if oauth_enabled %}
   <a href="/admin/oauth/authorize" role="button" style="width: 100%"
-    >Sign in with Pocket ID</a
+    >pocket-id</a
   >
   <hr />
   <details>
-    <summary>Sign in with password</summary>
+    <summary>sign in with password</summary>
     {% endif %}
 
     <form method="post" action="/admin/login">
