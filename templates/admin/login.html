@@ -1,5 +1,18 @@
-{% extends "layout/base.html" %} {% block title %}admin login{% endblock %} {%
-block content %}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <title>admin login</title>
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.classless.min.css" />
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.colors.min.css" />
+    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <main>
 <article style="max-width: 400px; margin: 4rem auto">
   <header><h2>admin</h2></header>
   {% if error %}
@@ -49,4 +62,6 @@ block content %}
   </details>
   {% endif %}
 </article>
-{% endblock %}
+    </main>
+  </body>
+</html>

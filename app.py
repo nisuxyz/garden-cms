@@ -3,10 +3,12 @@ import os
 from pathlib import Path
 
 from dotenv import load_dotenv
-from litestar import Litestar, Response
+from litestar import Litestar, Request, Response
 from litestar.contrib.jinja import JinjaTemplateEngine
+from litestar.exceptions import NotAuthorizedException
 from litestar.middleware.session.client_side import CookieBackendConfig
 from litestar.plugins.htmx import HTMXPlugin
+from litestar.response import Redirect
 from litestar.static_files.config import StaticFilesConfig
 from litestar.template.config import TemplateConfig
 
@@ -38,6 +40,14 @@ async def add_security_headers(response: Response) -> Response:
     return response
 
 
+def _handle_not_authorized(request: "Request", exc: NotAuthorizedException) -> Redirect:
+    """Redirect to login page instead of returning JSON 401."""
+    redirect_to = "/admin/login"
+    if isinstance(exc.extra, dict):
+        redirect_to = exc.extra.get("redirect_to", redirect_to)
+    return Redirect(path=redirect_to)
+
+
 # ── Application ────────────────────────────────────────────
 
 app = Litestar(
@@ -53,6 +63,7 @@ app = Litestar(
     ],
     middleware=[session_config.middleware],
     plugins=[HTMXPlugin()],
+    exception_handlers={NotAuthorizedException: _handle_not_authorized},
     after_request=add_security_headers,
     debug=os.getenv("DEBUG", "false").lower() == "true",
 )

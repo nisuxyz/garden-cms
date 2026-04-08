@@ -1,63 +1,89 @@
-{% extends "layout/base.html" %} {% block head %}
-<style>
-  .admin-layout {
-    display: grid;
-    grid-template-columns: 180px 1fr;
-    gap: 2rem;
-    align-items: start;
-  }
-  .admin-sidebar nav ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-  }
-  .admin-sidebar nav ul li {
-    margin-bottom: 0.25rem;
-  }
-  .admin-sidebar nav ul li a,
-  .admin-sidebar .logout-form button {
-    display: block;
-    padding: 0.4rem 0.75rem;
-    border-radius: var(--pico-border-radius);
-    text-decoration: none;
-    color: var(--pico-color);
-    font-size: 0.9rem;
-    transition: background var(--pico-transition);
-  }
-  .admin-sidebar nav ul li a:hover,
-  .admin-sidebar .logout-form button:hover {
-    background: var(--pico-card-background-color);
-  }
-  .admin-sidebar .logout-form {
-    margin: 0;
-  }
-  .admin-sidebar .logout-form button {
-    all: unset;
-    display: block;
-    width: 100%;
-    cursor: pointer;
-    box-sizing: border-box;
-  }
-</style>
-{% endblock %} {% block content %}
-<div class="admin-layout">
-  <aside class="admin-sidebar">
-    <nav>
-      <ul>
-        <li><a href="/admin">dashboard</a></li>
-        <li><a href="/admin/pages">pages</a></li>
-        <li><a href="/admin/content">content blocks</a></li>
-        <li><a href="/admin/collections">collections</a></li>
-        <li><a href="/admin/media">media</a></li>
-        <li><a href="/admin/themes">themes</a></li>
-        <li>
-          <form method="post" action="/admin/logout" class="logout-form">
-            <button type="submit">log out</button>
-          </form>
-        </li>
-      </ul>
-    </nav>
-  </aside>
-  <section>{% block admin_content %}{% endblock %}</section>
-</div>
-{% endblock %}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <title>{% block title %}Admin{% endblock %}</title>
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.classless.min.css" />
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.colors.min.css" />
+    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml" />
+    <script src="https://cdn.jsdelivr.net/npm/htmx.org@next" defer></script>
+    <style>
+      .admin-layout {
+        display: grid;
+        grid-template-columns: 180px 1fr;
+        gap: 2rem;
+        align-items: start;
+      }
+      .admin-sidebar nav ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+      .admin-sidebar nav ul li {
+        margin-bottom: 0.25rem;
+      }
+      .admin-sidebar nav ul li a,
+      .admin-sidebar .logout-form button {
+        display: block;
+        padding: 0.4rem 0.75rem;
+        border-radius: var(--pico-border-radius);
+        text-decoration: none;
+        color: var(--pico-color);
+        font-size: 0.9rem;
+        transition: background 150ms ease;
+      }
+      .admin-sidebar nav ul li a:hover,
+      .admin-sidebar .logout-form button:hover {
+        background: var(--pico-card-background-color);
+      }
+      .admin-sidebar .logout-form {
+        margin: 0;
+      }
+      .admin-sidebar .logout-form button {
+        all: unset;
+        display: block;
+        width: 100%;
+        cursor: pointer;
+        box-sizing: border-box;
+        padding: 0.4rem 0.75rem;
+        border-radius: var(--pico-border-radius);
+        font-size: 0.9rem;
+      }
+    </style>
+    {% block head %}{% endblock %}
+  </head>
+  <body>
+    <header>
+      <nav>
+        <ul><li><strong><a href="/" style="text-decoration:none">&larr; site</a></strong></li></ul>
+        <ul><li><strong>admin</strong></li></ul>
+      </nav>
+    </header>
+    <main>
+      <div class="admin-layout">
+        <aside class="admin-sidebar">
+          <nav>
+            <ul>
+              <li><a href="/admin">dashboard</a></li>
+              <li><a href="/admin/pages">pages</a></li>
+              <li><a href="/admin/content">content blocks</a></li>
+              <li><a href="/admin/collections">collections</a></li>
+              <li><a href="/admin/media">media</a></li>
+              <li><a href="/admin/themes">themes</a></li>
+              <li>
+                <form method="post" action="/admin/logout" class="logout-form">
+                  <button type="submit">log out</button>
+                </form>
+              </li>
+            </ul>
+          </nav>
+        </aside>
+        <section>{% block admin_content %}{% endblock %}</section>
+      </div>
+    </main>
+  </body>
+</html>
