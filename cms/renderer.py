@@ -12,6 +12,7 @@ import re
 from typing import Any
 
 from jinja2 import BaseLoader, Environment
+from markupsafe import Markup
 
 from cms.expressions import ExpressionContext, ResolvedCollection
 from db.schema import render_md
@@ -99,9 +100,9 @@ def render_theme(
     tpl = _jinja_env.from_string(base_template)
     return tpl.render(
         title=title,
-        content=content_html,
+        content=Markup(content_html),
         nav_items=nav_items,
-        theme_css=css,
+        theme_css=Markup(css),
     )
 
 

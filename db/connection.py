@@ -40,6 +40,7 @@ _DEFAULT_THEME_TEMPLATE = """\
     <link rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.colors.min.css" />
     <script src="https://cdn.jsdelivr.net/npm/htmx.org@next" defer></script>
+    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml" />
     <style>{{ theme_css }}</style>
   </head>
   <body>
