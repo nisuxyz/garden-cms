@@ -14,7 +14,7 @@ from litestar.params import Body
 from litestar.plugins.htmx import HTMXRequest
 from litestar.response import Redirect, Response, Template
 
-from db.tables import ContentBlock, Page
+from db.tables import Collection, CollectionItem, CollectionItemSlugHistory, ContentBlock, Page
 from middleware.auth import admin_guard
 from middleware.oauth import (
     check_group_membership,
@@ -129,11 +129,13 @@ async def oauth_callback(request: HTMXRequest, code: str) -> Redirect:
 async def dashboard() -> Template:
     page_count = len(await Page.select(Page.id).output(as_list=True))
     block_count = len(await ContentBlock.select(ContentBlock.id).output(as_list=True))
+    collection_count = len(await Collection.select(Collection.id).output(as_list=True))
     return Template(
         template_name="admin/dashboard.html",
         context={
             "page_count": page_count,
             "block_count": block_count,
+            "collection_count": collection_count,
         },
     )
 
@@ -299,6 +301,271 @@ async def content_delete(block_id: int, request: HTMXRequest) -> Response | Redi
     return Redirect(path="/admin/content")
 
 
+# ── Collections ────────────────────────────────────────────
+
+@get("/collections")
+async def collections_list() -> Template:
+    rows = await (
+        Collection.select(Collection.id, Collection.name, Collection.slug)
+        .order_by(Collection.name)
+        .output(as_dict=True)
+    )
+    # Add item counts.
+    for row in rows:
+        count = await (
+            CollectionItem.count()
+            .where(CollectionItem.collection == row["id"])
+        )
+        row["item_count"] = count
+    return Template(template_name="admin/collections.html", context={"collections": rows})
+
+
+@get("/collections/new")
+async def collections_new() -> Template:
+    return Template(template_name="admin/collection_edit.html", context={"collection": None})
+
+
+@post("/collections")
+async def collections_create(
+    data: Annotated[dict, Body(media_type=RequestEncodingType.URL_ENCODED)],
+) -> Redirect:
+    name = (data.get("name") or "").strip()
+    slug = (data.get("slug") or "").strip()
+    description = (data.get("description") or "").strip() or None
+    fields_schema_raw = (data.get("fields_schema") or "[]").strip()
+    card_template = (data.get("card_template") or "").strip()
+    detail_template = (data.get("detail_template") or "").strip()
+    items_per_page = int(data.get("items_per_page") or 10)
+
+    try:
+        fields_schema = json.loads(fields_schema_raw)
+    except json.JSONDecodeError:
+        fields_schema = []
+
+    await Collection(
+        name=name,
+        slug=slug,
+        description=description,
+        fields_schema=fields_schema,
+        card_template=card_template,
+        detail_template=detail_template,
+        items_per_page=items_per_page,
+    ).save()
+    return Redirect(path="/admin/collections")
+
+
+@get("/collections/{col_id:int}/edit")
+async def collections_edit(col_id: int) -> Template:
+    row = await Collection.select().where(Collection.id == col_id).first().output(as_dict=True)
+    if not row:
+        raise NotFoundException()
+    return Template(template_name="admin/collection_edit.html", context={"collection": row})
+
+
+@post("/collections/{col_id:int}/edit")
+async def collections_update(
+    col_id: int,
+    data: Annotated[dict, Body(media_type=RequestEncodingType.URL_ENCODED)],
+) -> Redirect:
+    existing = await Collection.select(Collection.id).where(Collection.id == col_id).first().output(as_dict=True)
+    if not existing:
+        raise NotFoundException()
+
+    name = (data.get("name") or "").strip()
+    slug = (data.get("slug") or "").strip()
+    description = (data.get("description") or "").strip() or None
+    fields_schema_raw = (data.get("fields_schema") or "[]").strip()
+    card_template = (data.get("card_template") or "").strip()
+    detail_template = (data.get("detail_template") or "").strip()
+    items_per_page = int(data.get("items_per_page") or 10)
+
+    try:
+        fields_schema = json.loads(fields_schema_raw)
+    except json.JSONDecodeError:
+        fields_schema = []
+
+    await Collection.update(
+        {
+            Collection.name: name,
+            Collection.slug: slug,
+            Collection.description: description,
+            Collection.fields_schema: fields_schema,
+            Collection.card_template: card_template,
+            Collection.detail_template: detail_template,
+            Collection.items_per_page: items_per_page,
+            Collection.updated_at: datetime.now(timezone.utc),
+        }
+    ).where(Collection.id == col_id)
+    return Redirect(path="/admin/collections")
+
+
+@post("/collections/{col_id:int}/delete")
+async def collections_delete(col_id: int, request: HTMXRequest) -> Response | Redirect:
+    # Delete all items + slug history first.
+    item_ids = await (
+        CollectionItem.select(CollectionItem.id)
+        .where(CollectionItem.collection == col_id)
+        .output(as_list=True)
+    )
+    if item_ids:
+        await CollectionItemSlugHistory.delete().where(
+            CollectionItemSlugHistory.item.is_in(item_ids)
+        )
+    await CollectionItem.delete().where(CollectionItem.collection == col_id)
+    await Collection.delete().where(Collection.id == col_id)
+    if request.htmx:
+        return Response(content="", status_code=200)
+    return Redirect(path="/admin/collections")
+
+
+# ── Collection Items ───────────────────────────────────────
+
+@get("/collections/{col_id:int}/items")
+async def items_list(col_id: int) -> Template:
+    col = await Collection.select().where(Collection.id == col_id).first().output(as_dict=True)
+    if not col:
+        raise NotFoundException()
+    rows = await (
+        CollectionItem.select()
+        .where(CollectionItem.collection == col_id)
+        .order_by(CollectionItem.created_at, ascending=False)
+        .output(as_dict=True)
+    )
+    return Template(
+        template_name="admin/items.html",
+        context={"collection": col, "items": rows},
+    )
+
+
+@get("/collections/{col_id:int}/items/new")
+async def items_new(col_id: int) -> Template:
+    col = await Collection.select().where(Collection.id == col_id).first().output(as_dict=True)
+    if not col:
+        raise NotFoundException()
+    return Template(
+        template_name="admin/item_edit.html",
+        context={"collection": col, "item": None},
+    )
+
+
+@post("/collections/{col_id:int}/items")
+async def items_create(
+    col_id: int,
+    data: Annotated[dict, Body(media_type=RequestEncodingType.URL_ENCODED)],
+) -> Redirect:
+    col = await Collection.select().where(Collection.id == col_id).first().output(as_dict=True)
+    if not col:
+        raise NotFoundException()
+
+    title = (data.get("title") or "").strip()
+    slug = (data.get("slug") or "").strip()
+    published = data.get("published") == "on"
+    featured = data.get("featured") == "on"
+    sort_order = int(data.get("sort_order") or 0)
+
+    # Build data dict from fields_schema.
+    item_data = {}
+    for field_def in col.get("fields_schema", []):
+        fname = field_def["name"]
+        item_data[fname] = (data.get(f"field_{fname}") or "").strip()
+
+    await CollectionItem(
+        collection=col_id,
+        title=title,
+        slug=slug,
+        data=item_data,
+        published=published,
+        featured=featured,
+        sort_order=sort_order,
+    ).save()
+    return Redirect(path=f"/admin/collections/{col_id}/items")
+
+
+@get("/collections/{col_id:int}/items/{item_id:int}/edit")
+async def items_edit(col_id: int, item_id: int) -> Template:
+    col = await Collection.select().where(Collection.id == col_id).first().output(as_dict=True)
+    if not col:
+        raise NotFoundException()
+    item = await (
+        CollectionItem.select()
+        .where(CollectionItem.id == item_id)
+        .where(CollectionItem.collection == col_id)
+        .first()
+        .output(as_dict=True)
+    )
+    if not item:
+        raise NotFoundException()
+    return Template(
+        template_name="admin/item_edit.html",
+        context={"collection": col, "item": item},
+    )
+
+
+@post("/collections/{col_id:int}/items/{item_id:int}/edit")
+async def items_update(
+    col_id: int,
+    item_id: int,
+    data: Annotated[dict, Body(media_type=RequestEncodingType.URL_ENCODED)],
+) -> Redirect:
+    col = await Collection.select().where(Collection.id == col_id).first().output(as_dict=True)
+    if not col:
+        raise NotFoundException()
+    existing = await (
+        CollectionItem.select(CollectionItem.slug)
+        .where(CollectionItem.id == item_id)
+        .first()
+        .output(as_dict=True)
+    )
+    if not existing:
+        raise NotFoundException()
+
+    title = (data.get("title") or "").strip()
+    new_slug = (data.get("slug") or "").strip()
+    published = data.get("published") == "on"
+    featured = data.get("featured") == "on"
+    sort_order = int(data.get("sort_order") or 0)
+
+    item_data = {}
+    for field_def in col.get("fields_schema", []):
+        fname = field_def["name"]
+        item_data[fname] = (data.get(f"field_{fname}") or "").strip()
+
+    # Track slug change for 301 redirects.
+    old_slug = existing["slug"]
+    if new_slug != old_slug:
+        await CollectionItemSlugHistory(
+            item=item_id,
+            collection_slug=col["slug"],
+            old_slug=old_slug,
+        ).save()
+
+    await CollectionItem.update(
+        {
+            CollectionItem.title: title,
+            CollectionItem.slug: new_slug,
+            CollectionItem.data: item_data,
+            CollectionItem.published: published,
+            CollectionItem.featured: featured,
+            CollectionItem.sort_order: sort_order,
+            CollectionItem.updated_at: datetime.now(timezone.utc),
+        }
+    ).where(CollectionItem.id == item_id)
+    return Redirect(path=f"/admin/collections/{col_id}/items")
+
+
+@post("/collections/{col_id:int}/items/{item_id:int}/delete")
+async def items_delete(
+    col_id: int, item_id: int, request: HTMXRequest,
+) -> Response | Redirect:
+    await CollectionItemSlugHistory.delete().where(
+        CollectionItemSlugHistory.item == item_id
+    )
+    await CollectionItem.delete().where(CollectionItem.id == item_id)
+    if request.htmx:
+        return Response(content="", status_code=200)
+    return Redirect(path=f"/admin/collections/{col_id}/items")
+
+
 # ── Guarded and unguarded handlers ─────────────────────────
 
 _password_login_router = Router(
@@ -312,6 +579,9 @@ _guarded_handlers = [
     dashboard,
     pages_list, pages_new, pages_create, pages_edit, pages_update, pages_delete,
     content_list, content_create, content_update, content_delete,
+    collections_list, collections_new, collections_create, collections_edit,
+    collections_update, collections_delete,
+    items_list, items_new, items_create, items_edit, items_update, items_delete,
 ]
 
 _guarded_router = Router(
