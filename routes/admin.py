@@ -42,7 +42,11 @@ _log = logging.getLogger(__name__)
 async def login_page(error: str | None = None) -> Template:
     return Template(
         template_name="admin/login.html",
-        context={"error": error, "oauth_enabled": oauth_configured()},
+        context={
+            "error": error,
+            "oauth_enabled": oauth_configured(),
+            "oauth_provider_name": os.environ.get("OAUTH_PROVIDER_NAME", "oauth"),
+        },
     )
 
 
