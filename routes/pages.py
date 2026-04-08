@@ -1,102 +1,65 @@
 # routes/pages.py
-from typing import Annotated
+"""
+Dynamic CMS page and collection-item routing.
 
-from litestar import Router, get, post
-from litestar.enums import RequestEncodingType
-from litestar.params import Body
-from litestar.plugins.htmx import HTMXRequest
-from litestar.response import Redirect, Template
+All public URLs are resolved at runtime from the database:
+  GET /              → Page where is_homepage=True
+  GET /{slug}        → Page by slug
+  GET /{col}/{item}  → CollectionItem detail (with 301 redirect from old slugs)
+"""
+from litestar import Response, Router, get
+from litestar.exceptions import NotFoundException
+from litestar.response import Redirect
 
-from db.schema import get_content, parse_tags
-from db.tables import Post, Project
+from cms.engine import (
+    render_item,
+    render_page,
+    resolve_collection_item,
+    resolve_homepage,
+    resolve_page,
+    resolve_slug_redirect,
+)
+from db.tables import Collection
 
 
 @get("/")
-async def index(request: HTMXRequest) -> Template:
-    content = {
-        "hero_headline": await get_content("home.hero_headline"),
-        "hero_subtext":  await get_content("home.hero_subtext"),
-        "about":         await get_content("home.about"),
-    }
-    raw_posts = await (
-        Post.select(Post.title, Post.slug, Post.summary, Post.tags, Post.created_at)
-        .where(Post.published.eq(True))
-        .order_by(Post.created_at, ascending=False)
-        .limit(3)
-    )
-
-    def _fmt(p: dict) -> dict:
-        r = {**p, "tags": parse_tags(p.get("tags", []))}
-        ca = r.get("created_at")
-        if ca is not None and hasattr(ca, "strftime"):
-            r["created_at"] = ca.strftime("%Y-%m-%d")
-        return r
-
-    posts = [_fmt(p) for p in raw_posts]
-
-    raw_projects = await (
-        Project.select(
-            Project.title, Project.slug, Project.summary,
-            Project.tags, Project.url, Project.repo_url,
-        )
-        .where(Project.published.eq(True))
-        .where(Project.featured.eq(True))
-        .order_by(Project.created_at, ascending=False)
-        .limit(4)
-    )
-    projects = [{**p, "tags": parse_tags(p.get("tags", []))} for p in raw_projects]
-
-    return Template(
-        template_name="pages/index.html",
-        context={"content": content, "posts": posts, "projects": projects},
-    )
+async def homepage() -> Response:
+    page = await resolve_homepage()
+    if page is None:
+        raise NotFoundException(detail="No homepage configured")
+    html = await render_page(page)
+    return Response(content=html, media_type="text/html")
 
 
-@get("/resume")
-async def resume() -> Template:
-    content = {
-        "intro":      await get_content("resume.intro"),
-        "experience": await get_content("resume.experience"),
-        "education":  await get_content("resume.education"),
-        "skills":     await get_content("resume.skills"),
-    }
-    return Template(template_name="pages/resume.html", context={"content": content})
+@get("/{slug:path}")
+async def dynamic_page(slug: str) -> Response | Redirect:
+    # 1. Try matching a Page.
+    page = await resolve_page(slug)
+    if page is not None:
+        html = await render_page(page)
+        return Response(content=html, media_type="text/html")
+
+    # 2. Try matching {collection_slug}/{item_slug}.
+    parts = slug.split("/", 1)
+    if len(parts) == 2:
+        col_slug, item_slug = parts
+
+        col, item = await resolve_collection_item(col_slug, item_slug)
+        if col is not None and item is not None:
+            html = await render_item(col, item)
+            return Response(content=html, media_type="text/html")
+
+        # 3. Check slug history for 301 redirect.
+        redirect_url = await resolve_slug_redirect(col_slug, item_slug)
+        if redirect_url is not None:
+            return Redirect(path=redirect_url, status_code=301)
+
+    # 4. Maybe the first segment is a collection slug (bare collection page).
+    #    Check if there's a Page whose slug matches the collection slug.
+    #    (Collections themselves don't have standalone pages — they're
+    #     embedded in Pages via ${collection.*} expressions.)
+
+    raise NotFoundException(detail="Page not found")
 
 
-@get("/contact")
-async def contact_page(success: str | None = None, error: str | None = None) -> Template:
-    return Template(
-        template_name="pages/contact.html",
-        context={
-            "intro": await get_content("contact.intro"),
-            "success": success == "1",
-            "error_msg": error == "1",
-        },
-    )
-
-
-@post("/contact")
-async def contact_post(
-    request: HTMXRequest,
-    data: Annotated[dict, Body(media_type=RequestEncodingType.URL_ENCODED)],
-) -> Template | Redirect:
-    name = (data.get("name") or "").strip()
-    email = (data.get("email") or "").strip()
-    message = (data.get("message") or "").strip()
-
-    if not (name and email and message):
-        if request.htmx:
-            return Template(
-                template_name="htmx/contact/error.html",
-                context={"error": "All fields are required."},
-                status_code=422,
-            )
-        return Redirect(path="/contact?error=1")
-
-    # TODO: integrate email/notification delivery
-    if request.htmx:
-        return Template(template_name="htmx/contact/success.html", context={})
-    return Redirect(path="/contact?success=1")
-
-
-pages_router = Router(path="/", route_handlers=[index, resume, contact_page, contact_post])
+pages_router = Router(path="/", route_handlers=[homepage, dynamic_page])

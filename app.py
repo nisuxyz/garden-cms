@@ -12,9 +12,8 @@ from litestar.template.config import TemplateConfig
 
 from db.connection import db_lifespan
 from routes.admin import admin_router
-from routes.blog import blog_router
+from routes.api import api_router
 from routes.pages import pages_router
-from routes.projects import projects_router
 
 load_dotenv()
 
@@ -42,7 +41,7 @@ async def add_security_headers(response: Response) -> Response:
 # ── Application ────────────────────────────────────────────
 
 app = Litestar(
-    route_handlers=[pages_router, blog_router, projects_router, admin_router],
+    route_handlers=[pages_router, api_router, admin_router],
     lifespan=[db_lifespan],
     template_config=TemplateConfig(
         directory=Path("templates"),
@@ -50,6 +49,7 @@ app = Litestar(
     ),
     static_files_config=[
         StaticFilesConfig(directories=[Path("static")], path="/static"),
+        StaticFilesConfig(directories=[Path("data/media")], path="/media"),
     ],
     middleware=[session_config.middleware],
     plugins=[HTMXPlugin()],
