@@ -278,78 +278,80 @@ ${site.contact.intro}
 
 
 async def init_db() -> None:
-    """Seed default CMS data if tables are empty."""
+    """Seed default CMS data if tables are empty.
 
-    # Only seed if no theme exists yet.
-    existing_theme = await Theme.count()
-    if existing_theme > 0:
-        return
+    Each section checks independently so a partial previous seed
+    (e.g. theme created but pages failed) is completed on next run.
+    """
 
     # ── Theme ──────────────────────────────────────────────
-    await Theme(
-        name="Mycelium",
-        slug="mycelium",
-        base_template=_DEFAULT_THEME_TEMPLATE,
-        css=_DEFAULT_THEME_CSS,
-        active=True,
-    ).save()
+    if await Theme.count() == 0:
+        await Theme(
+            name="Mycelium",
+            slug="mycelium",
+            base_template=_DEFAULT_THEME_TEMPLATE,
+            css=_DEFAULT_THEME_CSS,
+            active=True,
+        ).save()
 
     # ── Content Blocks ─────────────────────────────────────
-    for key, label, block_type, value in _DEFAULT_CONTENT_BLOCKS:
-        await ContentBlock(
-            key=key, label=label, block_type=block_type, value=value,
-        ).save()
+    if await ContentBlock.count() == 0:
+        for key, label, block_type, value in _DEFAULT_CONTENT_BLOCKS:
+            await ContentBlock(
+                key=key, label=label, block_type=block_type, value=value,
+            ).save()
 
     # ── Pages ──────────────────────────────────────────────
-    pages = [
-        ("Home", "home", _HOME_PAGE_MD, True, True, 0),
-        ("Blog", "blog", _BLOG_PAGE_MD, False, True, 1),
-        ("Projects", "projects", _PROJECTS_PAGE_MD, False, True, 2),
-        ("Resume", "resume", _RESUME_PAGE_MD, False, True, 3),
-        ("Contact", "contact", _CONTACT_PAGE_MD, False, True, 4),
-    ]
-    for title, slug, body_md, is_homepage, show_in_nav, nav_order in pages:
-        await Page(
-            title=title,
-            slug=slug,
-            body_md=body_md,
-            is_homepage=is_homepage,
-            show_in_nav=show_in_nav,
-            nav_order=nav_order,
-            published=True,
+    if await Page.count() == 0:
+        pages = [
+            ("Home", "home", _HOME_PAGE_MD, True, True, 0),
+            ("Blog", "blog", _BLOG_PAGE_MD, False, True, 1),
+            ("Projects", "projects", _PROJECTS_PAGE_MD, False, True, 2),
+            ("Resume", "resume", _RESUME_PAGE_MD, False, True, 3),
+            ("Contact", "contact", _CONTACT_PAGE_MD, False, True, 4),
+        ]
+        for title, slug, body_md, is_homepage, show_in_nav, nav_order in pages:
+            await Page(
+                title=title,
+                slug=slug,
+                body_md=body_md,
+                is_homepage=is_homepage,
+                show_in_nav=show_in_nav,
+                nav_order=nav_order,
+                published=True,
+            ).save()
+
+    # ── Collections ────────────────────────────────────────
+    if await Collection.count() == 0:
+        await Collection(
+            name="Blog Posts",
+            slug="blog",
+            description="Blog posts and articles",
+            fields_schema=[
+                {"name": "summary", "type": "text", "required": True},
+                {"name": "body", "type": "markdown", "required": True},
+                {"name": "tags", "type": "list", "required": False},
+            ],
+            card_template=_BLOG_CARD_TEMPLATE,
+            detail_template=_BLOG_DETAIL_TEMPLATE,
+            items_per_page=10,
         ).save()
 
-    # ── Blog Collection ────────────────────────────────────
-    await Collection(
-        name="Blog Posts",
-        slug="blog",
-        description="Blog posts and articles",
-        fields_schema=[
-            {"name": "summary", "type": "text", "required": True},
-            {"name": "body", "type": "markdown", "required": True},
-            {"name": "tags", "type": "list", "required": False},
-        ],
-        card_template=_BLOG_CARD_TEMPLATE,
-        detail_template=_BLOG_DETAIL_TEMPLATE,
-        items_per_page=10,
-    ).save()
-
-    # ── Projects Collection ────────────────────────────────
-    await Collection(
-        name="Projects",
-        slug="projects",
-        description="Portfolio projects",
-        fields_schema=[
-            {"name": "summary", "type": "text", "required": True},
-            {"name": "body", "type": "markdown", "required": True},
-            {"name": "tags", "type": "list", "required": False},
-            {"name": "url", "type": "url", "required": False},
-            {"name": "repo_url", "type": "url", "required": False},
-        ],
-        card_template=_PROJECT_CARD_TEMPLATE,
-        detail_template=_PROJECT_DETAIL_TEMPLATE,
-        items_per_page=12,
-    ).save()
+        await Collection(
+            name="Projects",
+            slug="projects",
+            description="Portfolio projects",
+            fields_schema=[
+                {"name": "summary", "type": "text", "required": True},
+                {"name": "body", "type": "markdown", "required": True},
+                {"name": "tags", "type": "list", "required": False},
+                {"name": "url", "type": "url", "required": False},
+                {"name": "repo_url", "type": "url", "required": False},
+            ],
+            card_template=_PROJECT_CARD_TEMPLATE,
+            detail_template=_PROJECT_DETAIL_TEMPLATE,
+            items_per_page=12,
+        ).save()
 
 
 @asynccontextmanager

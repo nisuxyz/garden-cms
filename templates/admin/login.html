@@ -1,67 +1,35 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="color-scheme" content="light dark" />
-    <title>admin login</title>
-    <link rel="stylesheet"
-          href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.classless.min.css" />
-    <link rel="stylesheet"
-          href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.colors.min.css" />
-    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml" />
-  </head>
-  <body>
-    <main>
+{% extends "layout/base.html" %}
+
+{% block title %}admin login{% endblock %}
+
+{% block content %}
 <article style="max-width: 400px; margin: 4rem auto">
   <header><h2>admin</h2></header>
   {% if error %}
   <p><mark>{{ error }}</mark></p>
   {% endif %} {% if oauth_enabled %}
-  <a href="/admin/oauth/authorize" role="button" style="width: 100%"
-    >pocket-id</a
-  >
+  <a href="/admin/oauth/authorize" role="button" style="width: 100%">oauth</a>
   <hr />
   <details>
     <summary>sign in with password</summary>
-    {% endif %}
+  {% endif %}
 
     <form method="post" action="/admin/login">
       <label>
         Username
-        <input
-          type="text"
-          name="username"
-          autocomplete="username"
-          {%
-          if
-          not
-          oauth_enabled
-          %}autofocus{%
-          endif
-          %}
-        />
+        <input type="text" name="username" autocomplete="username"
+          {% if not oauth_enabled %}autofocus{% endif %} />
       </label>
       <label>
         Password
-        <input
-          type="password"
-          name="password"
-          autocomplete="current-password"
-          required
-        />
+        <input type="password" name="password" autocomplete="current-password" required />
       </label>
-      <small
-        >Leave username blank to authenticate with the legacy env-var
-        password.</small
-      >
+      <small>Leave username blank to authenticate with the legacy env-var password.</small>
       <button type="submit">Log in</button>
     </form>
 
-    {% if oauth_enabled %}
+  {% if oauth_enabled %}
   </details>
   {% endif %}
 </article>
-    </main>
-  </body>
-</html>
+{% endblock %}
