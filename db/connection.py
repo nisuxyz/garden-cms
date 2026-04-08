@@ -3,7 +3,7 @@
 Database lifecycle management for Piccolo + Litestar.
 
 Provides an async lifespan context-manager that opens/closes the
-Piccolo connection pool and ensures tables + seed data exist.
+Piccolo connection pool and ensures seed data exists.
 """
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
@@ -11,7 +11,12 @@ from contextlib import asynccontextmanager
 from litestar import Litestar
 from piccolo.engine.postgres import PostgresEngine
 
-from db.schema import init_db
+
+async def init_db() -> None:
+    """Seed default CMS data (themes, pages, content blocks, collections).
+
+    Implemented in commit 7 — currently a no-op placeholder.
+    """
 
 
 @asynccontextmanager
