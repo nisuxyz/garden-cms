@@ -14,14 +14,7 @@ from litestar.params import Body
 from litestar.plugins.htmx import HTMXRequest
 from litestar.response import Redirect, Response, Template
 
-from db.schema import get_content, parse_tags, render_md
-from db.tables import (
-    Post,
-    PostSlugHistory,
-    Project,
-    ProjectSlugHistory,
-    SiteContent,
-)
+from db.tables import ContentBlock, Page
 from middleware.auth import admin_guard
 from middleware.oauth import (
     check_group_membership,
@@ -47,7 +40,7 @@ _log = logging.getLogger(__name__)
 @get("/login")
 async def login_page(error: str | None = None) -> Template:
     return Template(
-        template_name="pages/admin/login.html",
+        template_name="admin/login.html",
         context={"error": error, "oauth_enabled": oauth_configured()},
     )
 
@@ -79,7 +72,7 @@ async def login_submit(
         return Redirect(path="/admin")
 
     return Template(
-        template_name="pages/admin/login.html",
+        template_name="admin/login.html",
         context={"error": "Invalid credentials."},
     )
 
@@ -134,284 +127,180 @@ async def oauth_callback(request: HTMXRequest, code: str) -> Redirect:
 
 @get("/")
 async def dashboard() -> Template:
-    post_rows = await Post.select(Post.id).output(as_list=True)
-    project_rows = await Project.select(Project.id).output(as_list=True)
+    page_count = len(await Page.select(Page.id).output(as_list=True))
+    block_count = len(await ContentBlock.select(ContentBlock.id).output(as_list=True))
     return Template(
-        template_name="pages/admin/dashboard.html",
+        template_name="admin/dashboard.html",
         context={
-            "post_count": len(post_rows),
-            "project_count": len(project_rows),
-            "view": "overview",
+            "page_count": page_count,
+            "block_count": block_count,
         },
     )
 
 
-# ── Posts ──────────────────────────────────────────────────
+# ── Pages ──────────────────────────────────────────────────
 
-@get("/posts")
-async def posts_list() -> Template:
+@get("/pages")
+async def pages_list() -> Template:
     rows = await (
-        Post.select(Post.id, Post.title, Post.slug, Post.published, Post.created_at)
-        .order_by(Post.created_at, ascending=False)
-    )
-    return Template(
-        template_name="pages/admin/dashboard.html",
-        context={
-            "posts": rows,
-            "view": "posts",
-            "post_count": len(rows),
-            "project_count": 0,
-        },
-    )
-
-
-@get("/posts/new")
-async def posts_new() -> Template:
-    return Template(template_name="pages/admin/post_edit.html", context={"post": None})
-
-
-@post("/posts")
-async def posts_create(
-    data: Annotated[dict, Body(media_type=RequestEncodingType.URL_ENCODED)],
-) -> Redirect:
-    title = (data.get("title") or "").strip()
-    slug = (data.get("slug") or "").strip()
-    summary = (data.get("summary") or "").strip()
-    body = (data.get("body") or "").strip()
-    tags_raw = (data.get("tags") or "").strip()
-    published = data.get("published") == "on"
-    tags = [t.strip() for t in tags_raw.split(",") if t.strip()]
-    await Post(
-        title=title,
-        slug=slug,
-        summary=summary,
-        body=body,
-        tags=tags,
-        published=published,
-    ).save()
-    return Redirect(path="/admin/posts")
-
-
-@get("/posts/{post_id:int}/edit")
-async def posts_edit(post_id: int) -> Template:
-    row = await Post.select().where(Post.id == post_id).first()
-    if not row:
-        raise NotFoundException()
-    row["tags"] = parse_tags(row.get("tags", []))
-    return Template(template_name="pages/admin/post_edit.html", context={"post": row})
-
-
-@post("/posts/{post_id:int}/edit")
-async def posts_update(
-    post_id: int,
-    data: Annotated[dict, Body(media_type=RequestEncodingType.URL_ENCODED)],
-) -> Redirect:
-    existing = await Post.select(Post.slug).where(Post.id == post_id).first()
-    if not existing:
-        raise NotFoundException()
-    title = (data.get("title") or "").strip()
-    new_slug = (data.get("slug") or "").strip()
-    summary = (data.get("summary") or "").strip()
-    body = (data.get("body") or "").strip()
-    tags_raw = (data.get("tags") or "").strip()
-    published = data.get("published") == "on"
-    tags = [t.strip() for t in tags_raw.split(",") if t.strip()]
-    old_slug = existing["slug"]
-    if new_slug != old_slug:
-        await PostSlugHistory(post=post_id, slug=old_slug).save()
-    await Post.update(
-        {
-            Post.title: title,
-            Post.slug: new_slug,
-            Post.summary: summary,
-            Post.body: body,
-            Post.tags: tags,
-            Post.published: published,
-            Post.updated_at: datetime.now(timezone.utc),
-        }
-    ).where(Post.id == post_id)
-    return Redirect(path="/admin/posts")
-
-
-@post("/posts/{post_id:int}/delete")
-async def posts_delete(post_id: int, request: HTMXRequest) -> Response | Redirect:
-    await PostSlugHistory.delete().where(PostSlugHistory.post == post_id)
-    await Post.delete().where(Post.id == post_id)
-    if request.htmx:
-        return Response(content="", status_code=200)
-    return Redirect(path="/admin/posts")
-
-
-# ── Projects ───────────────────────────────────────────────
-
-@get("/projects")
-async def projects_list() -> Template:
-    rows = await (
-        Project.select(
-            Project.id, Project.title, Project.slug,
-            Project.published, Project.featured,
+        Page.select(
+            Page.id, Page.title, Page.slug, Page.published,
+            Page.is_homepage, Page.nav_order,
         )
-        .order_by(Project.created_at, ascending=False)
+        .order_by(Page.nav_order)
     )
-    return Template(
-        template_name="pages/admin/project_list.html",
-        context={"projects": rows},
-    )
+    return Template(template_name="admin/pages.html", context={"pages": rows})
 
 
-@get("/projects/new")
-async def projects_new() -> Template:
-    return Template(
-        template_name="pages/admin/project_edit.html",
-        context={"project": None},
-    )
+@get("/pages/new")
+async def pages_new() -> Template:
+    return Template(template_name="admin/page_edit.html", context={"page": None})
 
 
-@post("/projects")
-async def projects_create(
+@post("/pages")
+async def pages_create(
     data: Annotated[dict, Body(media_type=RequestEncodingType.URL_ENCODED)],
 ) -> Redirect:
     title = (data.get("title") or "").strip()
     slug = (data.get("slug") or "").strip()
-    summary = (data.get("summary") or "").strip()
-    body = (data.get("body") or "").strip()
-    tags_raw = (data.get("tags") or "").strip()
-    url = (data.get("url") or "").strip() or None
-    repo_url = (data.get("repo_url") or "").strip() or None
-    featured = data.get("featured") == "on"
+    body_md = (data.get("body_md") or "").strip()
+    meta_description = (data.get("meta_description") or "").strip() or None
+    is_homepage = data.get("is_homepage") == "on"
+    show_in_nav = data.get("show_in_nav") == "on"
+    nav_order = int(data.get("nav_order") or 0)
     published = data.get("published") == "on"
-    tags = [t.strip() for t in tags_raw.split(",") if t.strip()]
-    await Project(
+
+    if is_homepage:
+        await Page.update({Page.is_homepage: False}).where(Page.is_homepage.eq(True))
+
+    await Page(
         title=title,
         slug=slug,
-        summary=summary,
-        body=body,
-        tags=tags,
-        url=url,
-        repo_url=repo_url,
-        featured=featured,
+        body_md=body_md,
+        meta_description=meta_description,
+        is_homepage=is_homepage,
+        show_in_nav=show_in_nav,
+        nav_order=nav_order,
         published=published,
     ).save()
-    return Redirect(path="/admin/projects")
+    return Redirect(path="/admin/pages")
 
 
-@get("/projects/{project_id:int}/edit")
-async def projects_edit(project_id: int) -> Template:
-    row = await Project.select().where(Project.id == project_id).first()
+@get("/pages/{page_id:int}/edit")
+async def pages_edit(page_id: int) -> Template:
+    row = await Page.select().where(Page.id == page_id).first().output(as_dict=True)
     if not row:
         raise NotFoundException()
-    row["tags"] = parse_tags(row.get("tags", []))
-    return Template(
-        template_name="pages/admin/project_edit.html",
-        context={"project": row},
-    )
+    return Template(template_name="admin/page_edit.html", context={"page": row})
 
 
-@post("/projects/{project_id:int}/edit")
-async def projects_update(
-    project_id: int,
+@post("/pages/{page_id:int}/edit")
+async def pages_update(
+    page_id: int,
     data: Annotated[dict, Body(media_type=RequestEncodingType.URL_ENCODED)],
 ) -> Redirect:
-    existing = await (
-        Project.select(Project.slug).where(Project.id == project_id).first()
-    )
+    existing = await Page.select(Page.id).where(Page.id == page_id).first().output(as_dict=True)
     if not existing:
         raise NotFoundException()
+
     title = (data.get("title") or "").strip()
-    new_slug = (data.get("slug") or "").strip()
-    summary = (data.get("summary") or "").strip()
-    body = (data.get("body") or "").strip()
-    tags_raw = (data.get("tags") or "").strip()
-    url = (data.get("url") or "").strip() or None
-    repo_url = (data.get("repo_url") or "").strip() or None
-    featured = data.get("featured") == "on"
+    slug = (data.get("slug") or "").strip()
+    body_md = (data.get("body_md") or "").strip()
+    meta_description = (data.get("meta_description") or "").strip() or None
+    is_homepage = data.get("is_homepage") == "on"
+    show_in_nav = data.get("show_in_nav") == "on"
+    nav_order = int(data.get("nav_order") or 0)
     published = data.get("published") == "on"
-    tags = [t.strip() for t in tags_raw.split(",") if t.strip()]
-    old_slug = existing["slug"]
-    if new_slug != old_slug:
-        await ProjectSlugHistory(project=project_id, slug=old_slug).save()
-    await Project.update(
+
+    if is_homepage:
+        await Page.update({Page.is_homepage: False}).where(
+            Page.is_homepage.eq(True)
+        ).where(Page.id != page_id)
+
+    await Page.update(
         {
-            Project.title: title,
-            Project.slug: new_slug,
-            Project.summary: summary,
-            Project.body: body,
-            Project.tags: tags,
-            Project.url: url,
-            Project.repo_url: repo_url,
-            Project.featured: featured,
-            Project.published: published,
-            Project.updated_at: datetime.now(timezone.utc),
+            Page.title: title,
+            Page.slug: slug,
+            Page.body_md: body_md,
+            Page.meta_description: meta_description,
+            Page.is_homepage: is_homepage,
+            Page.show_in_nav: show_in_nav,
+            Page.nav_order: nav_order,
+            Page.published: published,
+            Page.updated_at: datetime.now(timezone.utc),
         }
-    ).where(Project.id == project_id)
-    return Redirect(path="/admin/projects")
+    ).where(Page.id == page_id)
+    return Redirect(path="/admin/pages")
 
 
-@post("/projects/{project_id:int}/delete")
-async def projects_delete(
-    project_id: int, request: HTMXRequest,
-) -> Response | Redirect:
-    await ProjectSlugHistory.delete().where(
-        ProjectSlugHistory.project == project_id,
-    )
-    await Project.delete().where(Project.id == project_id)
+@post("/pages/{page_id:int}/delete")
+async def pages_delete(page_id: int, request: HTMXRequest) -> Response | Redirect:
+    await Page.delete().where(Page.id == page_id)
     if request.htmx:
         return Response(content="", status_code=200)
-    return Redirect(path="/admin/projects")
+    return Redirect(path="/admin/pages")
 
 
-# ── Site Content ───────────────────────────────────────────
+# ── Content Blocks ─────────────────────────────────────────
 
 @get("/content")
 async def content_list() -> Template:
     rows = await (
-        SiteContent.select(
-            SiteContent.content_key,
-            SiteContent.value,
-            SiteContent.label,
-            SiteContent.is_markdown,
-            SiteContent.updated_at,
-        )
-        .order_by(SiteContent.content_key)
+        ContentBlock.select()
+        .order_by(ContentBlock.key)
+        .output(as_dict=True)
     )
-    # Template expects "key" not "content_key"
-    blocks = [{**r, "key": r["content_key"]} for r in rows]
-    return Template(
-        template_name="pages/admin/content.html",
-        context={"blocks": blocks},
-    )
+    return Template(template_name="admin/content.html", context={"blocks": rows})
 
 
-@post("/content/{key:str}")
+@post("/content")
+async def content_create(
+    data: Annotated[dict, Body(media_type=RequestEncodingType.URL_ENCODED)],
+) -> Redirect:
+    key = (data.get("key") or "").strip()
+    label = (data.get("label") or "").strip()
+    block_type = (data.get("block_type") or "text").strip()
+    value = (data.get("value") or "").strip()
+    await ContentBlock(key=key, label=label, block_type=block_type, value=value).save()
+    return Redirect(path="/admin/content")
+
+
+@post("/content/{block_id:int}")
 async def content_update(
-    key: str,
+    block_id: int,
     request: HTMXRequest,
     data: Annotated[dict, Body(media_type=RequestEncodingType.URL_ENCODED)],
 ) -> Response | Redirect:
-    exists = await SiteContent.exists().where(SiteContent.content_key == key)
-    if not exists:
+    existing = await ContentBlock.select(ContentBlock.id).where(
+        ContentBlock.id == block_id
+    ).first().output(as_dict=True)
+    if not existing:
         raise NotFoundException()
+
     value = (data.get("value") or "").strip()
-    await (
-        SiteContent.update({
-            SiteContent.value: value,
-        })
-        .where(SiteContent.content_key == key)
-    )
+    await ContentBlock.update(
+        {ContentBlock.value: value, ContentBlock.updated_at: datetime.now(timezone.utc)}
+    ).where(ContentBlock.id == block_id)
+
     if request.htmx:
-        safe_id = key.replace(".", "-")
         return Response(
-            content=f'<span id="saved-{safe_id}" class="meta"><ins>Saved ✓</ins></span>',
+            content='<span class="meta"><ins>Saved ✓</ins></span>',
             status_code=200,
             media_type="text/html",
         )
     return Redirect(path="/admin/content")
 
 
-# ── Guarded and unguarded handlers ─────────────────────────
-# Login/logout don't require auth; everything else does.
+@post("/content/{block_id:int}/delete")
+async def content_delete(block_id: int, request: HTMXRequest) -> Response | Redirect:
+    await ContentBlock.delete().where(ContentBlock.id == block_id)
+    if request.htmx:
+        return Response(content="", status_code=200)
+    return Redirect(path="/admin/content")
 
-# Rate-limit the password login endpoint (5 attempts / minute per IP).
+
+# ── Guarded and unguarded handlers ─────────────────────────
+
 _password_login_router = Router(
     path="/",
     route_handlers=[login_submit],
@@ -420,9 +309,9 @@ _password_login_router = Router(
 
 _public_handlers = [login_page, logout, _password_login_router, oauth_authorize, oauth_callback]
 _guarded_handlers = [
-    dashboard, posts_list, posts_new, posts_create, posts_edit, posts_update,
-    posts_delete, projects_list, projects_new, projects_create, projects_edit,
-    projects_update, projects_delete, content_list, content_update,
+    dashboard,
+    pages_list, pages_new, pages_create, pages_edit, pages_update, pages_delete,
+    content_list, content_create, content_update, content_delete,
 ]
 
 _guarded_router = Router(

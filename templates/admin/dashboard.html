@@ -1,0 +1,17 @@
+{% extends "layout/admin.html" %}
+{% block title %}Admin{% endblock %}
+{% block admin_content %}
+<h2>Dashboard</h2>
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+  <article>
+    <header><strong>Pages</strong></header>
+    <p style="font-size:2rem; margin:0;">{{ page_count }}</p>
+    <footer><a href="/admin/pages">Manage &rarr;</a></footer>
+  </article>
+  <article>
+    <header><strong>Content Blocks</strong></header>
+    <p style="font-size:2rem; margin:0;">{{ block_count }}</p>
+    <footer><a href="/admin/content">Manage &rarr;</a></footer>
+  </article>
+</div>
+{% endblock %}

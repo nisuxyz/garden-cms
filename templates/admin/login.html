@@ -1,0 +1,52 @@
+{% extends "layout/base.html" %} {% block title %}admin login{% endblock %} {%
+block content %}
+<article style="max-width: 400px; margin: 4rem auto">
+  <header><h2>admin</h2></header>
+  {% if error %}
+  <p><mark>{{ error }}</mark></p>
+  {% endif %} {% if oauth_enabled %}
+  <a href="/admin/oauth/authorize" role="button" style="width: 100%"
+    >pocket-id</a
+  >
+  <hr />
+  <details>
+    <summary>sign in with password</summary>
+    {% endif %}
+
+    <form method="post" action="/admin/login">
+      <label>
+        Username
+        <input
+          type="text"
+          name="username"
+          autocomplete="username"
+          {%
+          if
+          not
+          oauth_enabled
+          %}autofocus{%
+          endif
+          %}
+        />
+      </label>
+      <label>
+        Password
+        <input
+          type="password"
+          name="password"
+          autocomplete="current-password"
+          required
+        />
+      </label>
+      <small
+        >Leave username blank to authenticate with the legacy env-var
+        password.</small
+      >
+      <button type="submit">Log in</button>
+    </form>
+
+    {% if oauth_enabled %}
+  </details>
+  {% endif %}
+</article>
+{% endblock %}

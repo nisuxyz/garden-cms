@@ -1,0 +1,46 @@
+{% extends "layout/admin.html" %}
+{% block title %}Pages{% endblock %}
+{% block admin_content %}
+<hgroup>
+  <h2>Pages</h2>
+  <p><a href="/admin/pages/new" role="button">New page</a></p>
+</hgroup>
+
+{% if pages %}
+<table>
+  <thead>
+    <tr>
+      <th>Title</th>
+      <th>Slug</th>
+      <th>Nav</th>
+      <th>Status</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for page in pages %}
+    <tr id="page-row-{{ page.id }}">
+      <td><a href="/admin/pages/{{ page.id }}/edit">{{ page.title }}</a></td>
+      <td><code>{{ page.slug }}</code></td>
+      <td>
+        {% if page.is_homepage %}<mark>home</mark>
+        {% elif page.show_in_nav is not defined or page.show_in_nav %}&#x2713;
+        {% else %}&mdash;{% endif %}
+      </td>
+      <td>{% if page.published %}<ins>published</ins>{% else %}<del>draft</del>{% endif %}</td>
+      <td>
+        <form method="post" action="/admin/pages/{{ page.id }}/delete"
+              hx-post="/admin/pages/{{ page.id }}/delete"
+              hx-target="#page-row-{{ page.id }}" hx-swap="outerHTML"
+              hx-confirm="Delete &quot;{{ page.title }}&quot;?">
+          <button type="submit" class="outline secondary" style="padding:0.25rem 0.5rem;">Delete</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p>No pages yet. <a href="/admin/pages/new">Create one &rarr;</a></p>
+{% endif %}
+{% endblock %}
