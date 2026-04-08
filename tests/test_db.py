@@ -1,15 +1,41 @@
 # tests/test_db.py
+"""Tests for the CMS database schema and seed data."""
 import pytest
 
-from db.schema import get_content, parse_tags, render_md
-from db.tables import Post, PostSlugHistory, SiteContent
+from db.schema import render_md
+from db.tables import (
+    Collection,
+    CollectionItem,
+    CollectionItemSlugHistory,
+    ContentBlock,
+    Page,
+    Theme,
+)
+
+
+# ── Seed data ──────────────────────────────────────────────
 
 
 @pytest.mark.asyncio
-async def test_init_db_seeds_content(engine):
+async def test_seed_creates_theme(engine):
+    row = await Theme.select().where(Theme.slug == "mycelium").first()
+    assert row is not None
+    assert row["active"] is True
+
+
+@pytest.mark.asyncio
+async def test_seed_creates_homepage(engine):
+    row = await Page.select().where(Page.is_homepage.eq(True)).first()
+    assert row is not None
+    assert row["slug"] == "home"
+    assert row["published"] is True
+
+
+@pytest.mark.asyncio
+async def test_seed_creates_content_blocks(engine):
     row = (
-        await SiteContent.select(SiteContent.value)
-        .where(SiteContent.content_key == "home.hero_headline")
+        await ContentBlock.select()
+        .where(ContentBlock.key == "hero_headline")
         .first()
     )
     assert row is not None
@@ -17,55 +43,71 @@ async def test_init_db_seeds_content(engine):
 
 
 @pytest.mark.asyncio
-async def test_get_content_returns_html_for_markdown(engine):
-    await SiteContent(
-        content_key="test.md",
-        value="**bold**",
-        label="Test",
-        is_markdown=True,
-    ).save()
-    result = await get_content("test.md")
-    assert "<strong>bold</strong>" in result
+async def test_seed_creates_collections(engine):
+    blog = await Collection.select().where(Collection.slug == "blog").first()
+    projects = await Collection.select().where(Collection.slug == "projects").first()
+    assert blog is not None
+    assert projects is not None
+    assert len(blog["fields_schema"]) > 0
 
 
 @pytest.mark.asyncio
-async def test_get_content_returns_plain_text(engine):
-    await SiteContent(
-        content_key="test.plain",
-        value="Hello world",
-        label="Test",
-        is_markdown=False,
-    ).save()
-    result = await get_content("test.plain")
-    assert result == "Hello world"
+async def test_seed_idempotent(engine):
+    """Calling init_db() again should not duplicate rows."""
+    from db.connection import init_db
+
+    count_before = await Theme.count()
+    await init_db()
+    assert await Theme.count() == count_before
+
+
+# ── Content blocks ─────────────────────────────────────────
 
 
 @pytest.mark.asyncio
-async def test_get_content_missing_key_returns_empty(engine):
-    assert await get_content("nonexistent.key") == ""
+async def test_content_block_types(engine):
+    await ContentBlock(
+        key="test.md", label="Test", block_type="markdown", value="**bold**",
+    ).save()
+    row = await ContentBlock.select().where(ContentBlock.key == "test.md").first()
+    assert row["block_type"] == "markdown"
+
+    await ContentBlock(
+        key="test.img", label="Img", block_type="image", value="photo.jpg",
+    ).save()
+    row = await ContentBlock.select().where(ContentBlock.key == "test.img").first()
+    assert row["block_type"] == "image"
 
 
-def test_parse_tags():
-    assert parse_tags('["python", "web"]') == ["python", "web"]
-    assert parse_tags("[]") == []
-    assert parse_tags("") == []
-    assert parse_tags("bad json") == []
-    # Piccolo JSON columns return native lists
-    assert parse_tags(["python", "web"]) == ["python", "web"]
+# ── Slug history ───────────────────────────────────────────
 
 
 @pytest.mark.asyncio
 async def test_slug_history_preserved(engine):
-    post = Post(title="Hello", slug="hello", summary="Summary", body="Body")
-    await post.save()
-    post_id = post.id
+    col = await Collection.select().where(Collection.slug == "blog").first()
+    item = CollectionItem(
+        collection=col["id"], title="Hello", slug="hello",
+        data={"summary": "s", "body": "b"}, published=True,
+    )
+    await item.save()
+    item_id = item.id
 
-    await PostSlugHistory(post=post_id, slug="old-hello").save()
+    await CollectionItemSlugHistory(
+        item=item_id, collection_slug="blog", old_slug="old-hello",
+    ).save()
 
     row = (
-        await PostSlugHistory.select(PostSlugHistory.post)
-        .where(PostSlugHistory.slug == "old-hello")
+        await CollectionItemSlugHistory.select()
+        .where(CollectionItemSlugHistory.old_slug == "old-hello")
         .first()
     )
     assert row is not None
-    assert row["post"] == post_id
+    assert row["item"] == item_id
+
+
+# ── render_md ──────────────────────────────────────────────
+
+
+def test_render_md():
+    assert "<strong>bold</strong>" in render_md("**bold**")
+    assert "<em>italic</em>" in render_md("*italic*")

@@ -12,16 +12,27 @@ import tempfile
 import pytest_asyncio
 from piccolo.engine.sqlite import SQLiteEngine
 
-from db.schema import init_db
+from db.connection import init_db
 from db.tables import (
-    Post,
-    PostSlugHistory,
-    Project,
-    ProjectSlugHistory,
-    SiteContent,
+    Collection,
+    CollectionItem,
+    CollectionItemSlugHistory,
+    ContentBlock,
+    MediaFile,
+    Page,
+    Theme,
 )
 
-_ALL_TABLES = [Post, PostSlugHistory, Project, ProjectSlugHistory, SiteContent]
+# Order matters: parents before children (FK deps).
+_ALL_TABLES = [
+    Theme,
+    Page,
+    ContentBlock,
+    Collection,
+    CollectionItem,
+    CollectionItemSlugHistory,
+    MediaFile,
+]
 
 
 @pytest_asyncio.fixture
@@ -41,11 +52,11 @@ async def engine():
     for tbl in _ALL_TABLES:
         tbl._meta._db = test_engine  # type: ignore[attr-defined]
 
-    # Create tables — parents before children (FK deps)
+    # Create tables
     for tbl in _ALL_TABLES:
         await tbl.create_table(if_not_exists=True)
 
-    # Seed default content
+    # Seed default CMS content
     await init_db()
 
     yield test_engine

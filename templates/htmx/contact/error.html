@@ -1,9 +1,0 @@
-<section id="contact-area">
-  <p><mark>{{ error }}</mark></p>
-  <form hx-post="/contact" hx-target="#contact-area" hx-swap="outerHTML">
-    <input type="text"  name="name"    placeholder="Your name"    required />
-    <input type="email" name="email"   placeholder="Your email"   required />
-    <textarea           name="message" placeholder="Your message" rows="6" required></textarea>
-    <button type="submit">Send message</button>
-  </form>
-</section>

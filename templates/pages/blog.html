@@ -1,9 +1,0 @@
-{% extends "layout/base.html" %} {% block title %}blog{% endblock %} {% block
-content %}
-<hgroup>
-  <h1>blog</h1>
-  <p class="meta">things i find interesting</p>
-</hgroup>
-{% if posts %} {% include "htmx/blog/list.html" %} {% else %}
-<p>no posts yet. check back soon!</p>
-{% endif %} {% endblock %}

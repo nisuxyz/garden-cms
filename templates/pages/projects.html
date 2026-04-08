@@ -1,9 +1,0 @@
-{% extends "layout/base.html" %} {% block title %}projects{% endblock %} {%
-block content %}
-<hgroup>
-  <h1>projects</h1>
-  <p class="meta">things i'm building, exploring, and shipping</p>
-</hgroup>
-{% if projects %} {% include "htmx/projects/grid.html" %} {% else %}
-<p>no projects yet. check back soon!</p>
-{% endif %} {% endblock %}
