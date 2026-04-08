@@ -19,25 +19,25 @@ from db.tables import Collection, ContentBlock, Page, Theme
 _DEFAULT_THEME_TEMPLATE = """\
 {% extends "layout/base.html" %}
 {% block head %}{{ extra_head }}{% endblock %}
-{% block header %}
-<nav>
-  <ul>
-    <li><strong><a href="/" style="text-decoration:none">&larr; home</a></strong></li>
-  </ul>
-  <ul>
-    {% for item in nav_items %}
-    <li><a href="{{ item.url }}">{{ item.title | lower }}</a></li>
-    {% endfor %}
-    <li>
-      <button data-theme-toggle
-        onclick="var d=document.documentElement,t=d.getAttribute('data-theme')==='dark'?'light':'dark';d.setAttribute('data-theme',t);localStorage.setItem('theme',t);"
-        title="Toggle theme" aria-label="Toggle theme"></button>
-    </li>
-  </ul>
-</nav>
-{% endblock %}
-{% block content %}
-{{ content }}
+{% block body %}
+<header>
+  <nav>
+    <ul>
+      <li><strong><a href="/" style="text-decoration:none">&larr; home</a></strong></li>
+    </ul>
+    <ul>
+      {% for item in nav_items %}
+      <li><a href="{{ item.url }}">{{ item.title | lower }}</a></li>
+      {% endfor %}
+      <li>
+        <button data-theme-toggle
+          onclick="var d=document.documentElement,t=d.getAttribute('data-theme')==='dark'?'light':'dark';d.setAttribute('data-theme',t);localStorage.setItem('theme',t);"
+          title="Toggle theme" aria-label="Toggle theme"></button>
+      </li>
+    </ul>
+  </nav>
+</header>
+<main>{{ content }}</main>
 <footer>
   <small>
     powered by <a href="https://litestar.dev" target="_blank">litestar</a> &middot;

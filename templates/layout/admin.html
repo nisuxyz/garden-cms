@@ -48,14 +48,14 @@
 </style>
 {% endblock %}
 
-{% block header %}
-<nav>
-  <ul><li><strong><a href="/" style="text-decoration:none">&larr; site</a></strong></li></ul>
-  <ul><li><strong>admin</strong></li></ul>
-</nav>
-{% endblock %}
-
-{% block content %}
+{% block body %}
+<header>
+  <nav>
+    <ul><li><strong><a href="/" style="text-decoration:none">&larr; site</a></strong></li></ul>
+    <ul><li><strong>admin</strong></li></ul>
+  </nav>
+</header>
+<main>
 <div class="admin-layout">
     <aside class="admin-sidebar">
       <nav>
@@ -76,4 +76,5 @@
     </aside>
   <section>{% block admin_content %}{% endblock %}</section>
 </div>
+</main>
 {% endblock %}

@@ -2,7 +2,8 @@
 
 {% block title %}admin login{% endblock %}
 
-{% block content %}
+{% block body %}
+<main>
 <article style="max-width: 400px; margin: 4rem auto">
   <header><h2>admin</h2></header>
   {% if error %}
@@ -32,4 +33,5 @@
   </details>
   {% endif %}
 </article>
+</main>
 {% endblock %}

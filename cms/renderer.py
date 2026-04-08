@@ -103,10 +103,9 @@ def render_theme(
     """Render a themed page.
 
     The theme's *base_template* (a Jinja2 string stored in the DB) should
-    ``{% extends "layout/base.html" %}`` and override ``{% block header %}``,
-    ``{% block content %}``, and optionally ``{% block head %}`` or
-    ``{% block body %}``.  Using ``_file_env.from_string`` gives the DB
-    string access to filesystem templates for ``{% extends %}``.
+    ``{% extends "layout/base.html" %}`` and override ``{% block body %}``
+    and optionally ``{% block head %}``.  Using ``_file_env.from_string``
+    gives the DB string access to filesystem templates for ``{% extends %}``.
     """
     extra_head = Markup(f"<style>{css}</style>") if css else ""
     tpl = _file_env.from_string(base_template)

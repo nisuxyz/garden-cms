@@ -28,17 +28,17 @@
     Base Template (Jinja2 — extends layout/base.html)
     <textarea name="base_template" rows="25" style="font-family:monospace; font-size:0.85rem;">{% if theme %}{{ theme.base_template }}{% else %}{{ "{% extends \"layout/base.html\" %}" }}
 {{ "{% block head %}" }}{{ "{{ extra_head }}" }}{{ "{% endblock %}" }}
-{{ "{% block header %}" }}
-<nav>
-  <ul>
-    {{ "{% for item in nav_items %}" }}
-    <li><a href="{{ "{{ item.url }}" }}">{{ "{{ item.title }}" }}</a></li>
-    {{ "{% endfor %}" }}
-  </ul>
-</nav>
-{{ "{% endblock %}" }}
-{{ "{% block content %}" }}
-{{ "{{ content }}" }}
+{{ "{% block body %}" }}
+<header>
+  <nav>
+    <ul>
+      {{ "{% for item in nav_items %}" }}
+      <li><a href="{{ "{{ item.url }}" }}">{{ "{{ item.title }}" }}</a></li>
+      {{ "{% endfor %}" }}
+    </ul>
+  </nav>
+</header>
+<main>{{ "{{ content }}" }}</main>
 <footer>
   <small>Powered by Bussin CMS</small>
 </footer>
@@ -46,8 +46,8 @@
   </label>
   <small class="meta">
     Extends <code>layout/base.html</code> (provides &lt;head&gt;, Pico CSS, htmx,
-    FOUC script). Override blocks: <code>header</code>, <code>content</code>,
-    <code>head</code>, <code>body</code>. Variables:
+    FOUC script). Override blocks: <code>head</code> (extra styles/scripts),
+    <code>body</code> (page structure). Variables:
     <code>{{ "{{ title }}" }}</code>, <code>{{ "{{ content }}" }}</code>,
     <code>{{ "{{ nav_items }}" }}</code> (list of {title, slug, url}),
     <code>{{ "{{ extra_head }}" }}</code> (theme CSS &lt;style&gt; tag).
