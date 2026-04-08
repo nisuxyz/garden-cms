@@ -17,60 +17,35 @@ from db.tables import Collection, ContentBlock, Page, Theme
 # ── Seed data ──────────────────────────────────────────────
 
 _DEFAULT_THEME_TEMPLATE = """\
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="color-scheme" content="light dark" />
-    <title>{{ title }}</title>
-    <script>
-      (function () {
-        var saved = localStorage.getItem("theme");
-        if (saved !== "light" && saved !== "dark") {
-          saved = window.matchMedia("(prefers-color-scheme: dark)").matches
-            ? "dark"
-            : "light";
-        }
-        document.documentElement.setAttribute("data-theme", saved);
-      })();
-    </script>
-    <link rel="stylesheet"
-          href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.classless.min.css" />
-    <link rel="stylesheet"
-          href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.colors.min.css" />
-    <script src="https://cdn.jsdelivr.net/npm/htmx.org@next" defer></script>
-    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml" />
-    <style>{{ theme_css }}</style>
-  </head>
-  <body>
-    <header>
-      <nav>
-        <ul>
-          <li><strong><a href="/" style="text-decoration:none">&larr; home</a></strong></li>
-        </ul>
-        <ul>
-          {% for item in nav_items %}
-          <li><a href="{{ item.url }}">{{ item.title | lower }}</a></li>
-          {% endfor %}
-          <li>
-            <button data-theme-toggle
-              onclick="var d=document.documentElement,t=d.getAttribute('data-theme')==='dark'?'light':'dark';d.setAttribute('data-theme',t);localStorage.setItem('theme',t);"
-              title="Toggle theme" aria-label="Toggle theme"></button>
-          </li>
-        </ul>
-      </nav>
-    </header>
-    <main>{{ content }}</main>
-    <footer>
-      <small>
-        powered by <a href="https://litestar.dev" target="_blank">litestar</a> &middot;
-        <a href="https://htmx.org" target="_blank">htmx</a> &middot;
-        <a href="https://picocss.com" target="_blank">pico css</a>
-      </small>
-    </footer>
-  </body>
-</html>
+{% extends "layout/base.html" %}
+{% block head %}{{ extra_head }}{% endblock %}
+{% block header %}
+<nav>
+  <ul>
+    <li><strong><a href="/" style="text-decoration:none">&larr; home</a></strong></li>
+  </ul>
+  <ul>
+    {% for item in nav_items %}
+    <li><a href="{{ item.url }}">{{ item.title | lower }}</a></li>
+    {% endfor %}
+    <li>
+      <button data-theme-toggle
+        onclick="var d=document.documentElement,t=d.getAttribute('data-theme')==='dark'?'light':'dark';d.setAttribute('data-theme',t);localStorage.setItem('theme',t);"
+        title="Toggle theme" aria-label="Toggle theme"></button>
+    </li>
+  </ul>
+</nav>
+{% endblock %}
+{% block content %}
+{{ content }}
+<footer>
+  <small>
+    powered by <a href="https://litestar.dev" target="_blank">litestar</a> &middot;
+    <a href="https://htmx.org" target="_blank">htmx</a> &middot;
+    <a href="https://picocss.com" target="_blank">pico css</a>
+  </small>
+</footer>
+{% endblock %}
 """
 
 _DEFAULT_THEME_CSS = """\

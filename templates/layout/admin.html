@@ -57,23 +57,23 @@
 
 {% block content %}
 <div class="admin-layout">
-  <aside class="admin-sidebar">
-    <nav>
-      <ul>
-        <li><a href="/admin">dashboard</a></li>
-        <li><a href="/admin/pages">pages</a></li>
-        <li><a href="/admin/content">content blocks</a></li>
-        <li><a href="/admin/collections">collections</a></li>
-        <li><a href="/admin/media">media</a></li>
-        <li><a href="/admin/themes">themes</a></li>
-        <li>
-          <form method="post" action="/admin/logout" class="logout-form">
-            <button type="submit">log out</button>
-          </form>
-        </li>
-      </ul>
-    </nav>
-  </aside>
+    <aside class="admin-sidebar">
+      <nav>
+        <ul>
+          <li><a href="/admin">dashboard</a></li>
+          <li><a href="/admin/pages">pages</a></li>
+          <li><a href="/admin/content">content blocks</a></li>
+          <li><a href="/admin/collections">collections</a></li>
+          <li><a href="/admin/media">media</a></li>
+          <li><a href="/admin/themes">themes</a></li>
+          <li>
+            <form method="post" action="/admin/logout" class="logout-form">
+              <button type="submit">log out</button>
+            </form>
+          </li>
+        </ul>
+      </nav>
+    </aside>
   <section>{% block admin_content %}{% endblock %}</section>
 </div>
 {% endblock %}

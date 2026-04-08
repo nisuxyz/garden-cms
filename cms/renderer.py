@@ -8,17 +8,25 @@ Rendering utilities for the CMS pipeline.
 """
 from __future__ import annotations
 
+import json
 import re
+from pathlib import Path
 from typing import Any
 
-from jinja2 import BaseLoader, Environment
+from jinja2 import Environment, FileSystemLoader
 from markupsafe import Markup
 
 from cms.expressions import ExpressionContext, ResolvedCollection
 from db.schema import render_md
 
-# Minimal Jinja2 env for rendering theme base templates from DB strings.
-_jinja_env = Environment(loader=BaseLoader(), autoescape=True)
+_TEMPLATE_DIR = Path(__file__).resolve().parent.parent / "templates"
+
+# Jinja2 env with filesystem loader — DB string templates can use
+# {% extends "layout/base.html" %} because from_string() inherits
+# the loader from the environment.
+_file_env = Environment(
+    loader=FileSystemLoader(str(_TEMPLATE_DIR)), autoescape=True
+)
 
 _ITEM_EXPR = re.compile(r"\$\{item\.([^}]+)\}")
 
@@ -36,7 +44,10 @@ def render_card(
         # Check top-level columns first, then the JSON ``data`` blob.
         val = item.get(field)
         if val is None:
-            val = item.get("data", {}).get(field, "")
+            data = item.get("data", {})
+            if isinstance(data, str):
+                data = json.loads(data) if data else {}
+            val = data.get(field, "")
         if val is None:
             val = ""
         # Special handling: render markdown fields in cards.
@@ -89,20 +100,21 @@ def render_theme(
     content_html: str,
     nav_items: list[dict[str, str]],
 ) -> str:
-    """Inject *content_html* into *base_template* (Jinja2 string).
+    """Render a themed page.
 
-    The base template may use:
-      {{ title }}      — page title
-      {{ content }}    — rendered page HTML (marked safe)
-      {{ nav_items }}  — list of {title, slug, url} dicts
-      {{ theme_css }}  — theme CSS string
+    The theme's *base_template* (a Jinja2 string stored in the DB) should
+    ``{% extends "layout/base.html" %}`` and override ``{% block header %}``,
+    ``{% block content %}``, and optionally ``{% block head %}`` or
+    ``{% block body %}``.  Using ``_file_env.from_string`` gives the DB
+    string access to filesystem templates for ``{% extends %}``.
     """
-    tpl = _jinja_env.from_string(base_template)
+    extra_head = Markup(f"<style>{css}</style>") if css else ""
+    tpl = _file_env.from_string(base_template)
     return tpl.render(
         title=title,
         content=Markup(content_html),
         nav_items=nav_items,
-        theme_css=Markup(css),
+        extra_head=extra_head,
     )
 
 

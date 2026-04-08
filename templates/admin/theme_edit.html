@@ -25,37 +25,32 @@
   </fieldset>
 
   <label>
-    Base Template (Jinja2 HTML)
-    <textarea name="base_template" rows="25" style="font-family:monospace; font-size:0.85rem;">{% if theme %}{{ theme.base_template }}{% else %}<!DOCTYPE html>
-<html lang="en" data-theme="light">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{ "{{ title }}" }}</title>
-  <style>{{ "{{ theme_css }}" }}</style>
-</head>
-<body>
-  <header>
-    <nav>
-      <ul>
-        {{ "{% for item in nav_items %}" }}
-        <li><a href="{{ "{{ item.url }}" }}">{{ "{{ item.title }}" }}</a></li>
-        {{ "{% endfor %}" }}
-      </ul>
-    </nav>
-  </header>
-  <main class="container">
-    {{ "{{ content }}" }}
-  </main>
-  <footer class="container">
-    <small>Powered by Bussin CMS</small>
-  </footer>
-</body>
-</html>{% endif %}</textarea>
+    Base Template (Jinja2 — extends layout/base.html)
+    <textarea name="base_template" rows="25" style="font-family:monospace; font-size:0.85rem;">{% if theme %}{{ theme.base_template }}{% else %}{{ "{% extends \"layout/base.html\" %}" }}
+{{ "{% block head %}" }}{{ "{{ extra_head }}" }}{{ "{% endblock %}" }}
+{{ "{% block header %}" }}
+<nav>
+  <ul>
+    {{ "{% for item in nav_items %}" }}
+    <li><a href="{{ "{{ item.url }}" }}">{{ "{{ item.title }}" }}</a></li>
+    {{ "{% endfor %}" }}
+  </ul>
+</nav>
+{{ "{% endblock %}" }}
+{{ "{% block content %}" }}
+{{ "{{ content }}" }}
+<footer>
+  <small>Powered by Bussin CMS</small>
+</footer>
+{{ "{% endblock %}" }}{% endif %}</textarea>
   </label>
   <small class="meta">
-    Available variables: <code>{{ "{{ title }}" }}</code>, <code>{{ "{{ content }}" }}</code>,
-    <code>{{ "{{ nav_items }}" }}</code> (list of {title, slug, url}), <code>{{ "{{ theme_css }}" }}</code>.
+    Extends <code>layout/base.html</code> (provides &lt;head&gt;, Pico CSS, htmx,
+    FOUC script). Override blocks: <code>header</code>, <code>content</code>,
+    <code>head</code>, <code>body</code>. Variables:
+    <code>{{ "{{ title }}" }}</code>, <code>{{ "{{ content }}" }}</code>,
+    <code>{{ "{{ nav_items }}" }}</code> (list of {title, slug, url}),
+    <code>{{ "{{ extra_head }}" }}</code> (theme CSS &lt;style&gt; tag).
   </small>
 
   <label>

@@ -55,7 +55,7 @@ async def test_get_active_theme(engine):
     theme = await get_active_theme()
     assert theme is not None
     assert theme["slug"] == "mycelium"
-    assert "<!doctype html>" in theme["base_template"].lower()
+    assert '{% extends "layout/base.html" %}' in theme["base_template"]
 
 
 # ── Render pipeline ───────────────────────────────────────
