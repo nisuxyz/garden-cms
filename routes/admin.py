@@ -191,7 +191,7 @@ async def pages_create(
 
 @get("/pages/{page_id:int}/edit")
 async def pages_edit(page_id: int) -> Template:
-    row = await Page.select().where(Page.id == page_id).first().output(as_dict=True)
+    row = await Page.select().where(Page.id == page_id).first()
     if not row:
         raise NotFoundException()
     return Template(template_name="admin/page_edit.html", context={"page": row})
@@ -202,7 +202,7 @@ async def pages_update(
     page_id: int,
     data: Annotated[dict, Body(media_type=RequestEncodingType.URL_ENCODED)],
 ) -> Redirect:
-    existing = await Page.select(Page.id).where(Page.id == page_id).first().output(as_dict=True)
+    existing = await Page.select(Page.id).where(Page.id == page_id).first()
     if not existing:
         raise NotFoundException()
 
@@ -251,7 +251,7 @@ async def content_list() -> Template:
     rows = await (
         ContentBlock.select()
         .order_by(ContentBlock.key)
-        .output(as_dict=True)
+        
     )
     return Template(template_name="admin/content.html", context={"blocks": rows})
 
@@ -276,7 +276,7 @@ async def content_update(
 ) -> Response | Redirect:
     existing = await ContentBlock.select(ContentBlock.id).where(
         ContentBlock.id == block_id
-    ).first().output(as_dict=True)
+    ).first()
     if not existing:
         raise NotFoundException()
 
@@ -309,7 +309,7 @@ async def collections_list() -> Template:
     rows = await (
         Collection.select(Collection.id, Collection.name, Collection.slug)
         .order_by(Collection.name)
-        .output(as_dict=True)
+        
     )
     # Add item counts.
     for row in rows:
@@ -357,7 +357,7 @@ async def collections_create(
 
 @get("/collections/{col_id:int}/edit")
 async def collections_edit(col_id: int) -> Template:
-    row = await Collection.select().where(Collection.id == col_id).first().output(as_dict=True)
+    row = await Collection.select().where(Collection.id == col_id).first()
     if not row:
         raise NotFoundException()
     return Template(template_name="admin/collection_edit.html", context={"collection": row})
@@ -368,7 +368,7 @@ async def collections_update(
     col_id: int,
     data: Annotated[dict, Body(media_type=RequestEncodingType.URL_ENCODED)],
 ) -> Redirect:
-    existing = await Collection.select(Collection.id).where(Collection.id == col_id).first().output(as_dict=True)
+    existing = await Collection.select(Collection.id).where(Collection.id == col_id).first()
     if not existing:
         raise NotFoundException()
 
@@ -423,14 +423,14 @@ async def collections_delete(col_id: int, request: HTMXRequest) -> Response | Re
 
 @get("/collections/{col_id:int}/items")
 async def items_list(col_id: int) -> Template:
-    col = await Collection.select().where(Collection.id == col_id).first().output(as_dict=True)
+    col = await Collection.select().where(Collection.id == col_id).first()
     if not col:
         raise NotFoundException()
     rows = await (
         CollectionItem.select()
         .where(CollectionItem.collection == col_id)
         .order_by(CollectionItem.created_at, ascending=False)
-        .output(as_dict=True)
+        
     )
     return Template(
         template_name="admin/items.html",
@@ -440,7 +440,7 @@ async def items_list(col_id: int) -> Template:
 
 @get("/collections/{col_id:int}/items/new")
 async def items_new(col_id: int) -> Template:
-    col = await Collection.select().where(Collection.id == col_id).first().output(as_dict=True)
+    col = await Collection.select().where(Collection.id == col_id).first()
     if not col:
         raise NotFoundException()
     return Template(
@@ -454,7 +454,7 @@ async def items_create(
     col_id: int,
     data: Annotated[dict, Body(media_type=RequestEncodingType.URL_ENCODED)],
 ) -> Redirect:
-    col = await Collection.select().where(Collection.id == col_id).first().output(as_dict=True)
+    col = await Collection.select().where(Collection.id == col_id).first()
     if not col:
         raise NotFoundException()
 
@@ -484,7 +484,7 @@ async def items_create(
 
 @get("/collections/{col_id:int}/items/{item_id:int}/edit")
 async def items_edit(col_id: int, item_id: int) -> Template:
-    col = await Collection.select().where(Collection.id == col_id).first().output(as_dict=True)
+    col = await Collection.select().where(Collection.id == col_id).first()
     if not col:
         raise NotFoundException()
     item = await (
@@ -492,7 +492,7 @@ async def items_edit(col_id: int, item_id: int) -> Template:
         .where(CollectionItem.id == item_id)
         .where(CollectionItem.collection == col_id)
         .first()
-        .output(as_dict=True)
+        
     )
     if not item:
         raise NotFoundException()
@@ -508,14 +508,14 @@ async def items_update(
     item_id: int,
     data: Annotated[dict, Body(media_type=RequestEncodingType.URL_ENCODED)],
 ) -> Redirect:
-    col = await Collection.select().where(Collection.id == col_id).first().output(as_dict=True)
+    col = await Collection.select().where(Collection.id == col_id).first()
     if not col:
         raise NotFoundException()
     existing = await (
         CollectionItem.select(CollectionItem.slug)
         .where(CollectionItem.id == item_id)
         .first()
-        .output(as_dict=True)
+        
     )
     if not existing:
         raise NotFoundException()
@@ -574,7 +574,7 @@ async def media_list() -> Template:
     rows = await (
         MediaFile.select()
         .order_by(MediaFile.created_at, ascending=False)
-        .output(as_dict=True)
+        
     )
     return Template(template_name="admin/media.html", context={"files": rows})
 
@@ -623,7 +623,7 @@ async def media_delete(media_id: int, request: HTMXRequest) -> Response | Redire
 
 @get("/themes")
 async def themes_list() -> Template:
-    rows = await Theme.select().order_by(Theme.name).output(as_dict=True)
+    rows = await Theme.select().order_by(Theme.name)
     return Template(template_name="admin/themes.html", context={"themes": rows})
 
 
@@ -653,7 +653,7 @@ async def themes_create(
 
 @get("/themes/{theme_id:int}/edit")
 async def themes_edit(theme_id: int) -> Template:
-    row = await Theme.select().where(Theme.id == theme_id).first().output(as_dict=True)
+    row = await Theme.select().where(Theme.id == theme_id).first()
     if not row:
         raise NotFoundException()
     return Template(template_name="admin/theme_edit.html", context={"theme": row})
@@ -664,7 +664,7 @@ async def themes_update(
     theme_id: int,
     data: Annotated[dict, Body(media_type=RequestEncodingType.URL_ENCODED)],
 ) -> Redirect:
-    existing = await Theme.select(Theme.id).where(Theme.id == theme_id).first().output(as_dict=True)
+    existing = await Theme.select(Theme.id).where(Theme.id == theme_id).first()
     if not existing:
         raise NotFoundException()
 
@@ -701,7 +701,7 @@ async def themes_activate(theme_id: int) -> Redirect:
 
 @post("/themes/{theme_id:int}/delete")
 async def themes_delete(theme_id: int, request: HTMXRequest) -> Response | Redirect:
-    row = await Theme.select(Theme.active).where(Theme.id == theme_id).first().output(as_dict=True)
+    row = await Theme.select(Theme.active).where(Theme.id == theme_id).first()
     if row and row.get("active"):
         if request.htmx:
             return Response(

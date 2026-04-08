@@ -85,7 +85,7 @@ async def save_upload(
         MediaFile.select()
         .where(MediaFile.filename == filename)
         .first()
-        .output(as_dict=True)
+        
     )
 
 
@@ -95,7 +95,7 @@ async def delete_media(media_id: int) -> None:
         MediaFile.select()
         .where(MediaFile.id == media_id)
         .first()
-        .output(as_dict=True)
+        
     )
     if row is None:
         return

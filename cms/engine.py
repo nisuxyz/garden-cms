@@ -29,7 +29,7 @@ async def get_active_theme() -> dict[str, Any] | None:
         await Theme.select()
         .where(Theme.active.eq(True))
         .first()
-        .output(as_dict=True)
+        
     )
 
 
@@ -40,7 +40,7 @@ async def get_nav_items() -> list[dict[str, str]]:
         .where(Page.published.eq(True))
         .where(Page.show_in_nav.eq(True))
         .order_by(Page.nav_order)
-        .output(as_dict=True)
+        
     )
     items = []
     for r in rows:
@@ -56,7 +56,7 @@ async def resolve_page(slug: str) -> dict[str, Any] | None:
         .where(Page.slug == slug)
         .where(Page.published.eq(True))
         .first()
-        .output(as_dict=True)
+        
     )
 
 
@@ -67,7 +67,7 @@ async def resolve_homepage() -> dict[str, Any] | None:
         .where(Page.is_homepage.eq(True))
         .where(Page.published.eq(True))
         .first()
-        .output(as_dict=True)
+        
     )
 
 
@@ -94,7 +94,7 @@ async def render_page(page: dict[str, Any]) -> str:
             await Theme.select()
             .where(Theme.id == page["theme"])
             .first()
-            .output(as_dict=True)
+            
         )
     if theme is None:
         theme = await get_active_theme()
@@ -124,7 +124,7 @@ async def resolve_collection_item(
         await Collection.select()
         .where(Collection.slug == collection_slug)
         .first()
-        .output(as_dict=True)
+        
     )
     if col is None:
         return None, None
@@ -135,7 +135,7 @@ async def resolve_collection_item(
         .where(CollectionItem.slug == item_slug)
         .where(CollectionItem.published.eq(True))
         .first()
-        .output(as_dict=True)
+        
     )
     return col, item
 
@@ -152,7 +152,7 @@ async def resolve_slug_redirect(
         .where(CollectionItemSlugHistory.collection_slug == collection_slug)
         .where(CollectionItemSlugHistory.old_slug == item_slug)
         .first()
-        .output(as_dict=True)
+        
     )
     if row is None:
         return None
@@ -162,7 +162,7 @@ async def resolve_slug_redirect(
         await CollectionItem.select(CollectionItem.slug)
         .where(CollectionItem.id == row["item"])
         .first()
-        .output(as_dict=True)
+        
     )
     if item is None:
         return None
@@ -218,7 +218,7 @@ async def render_collection_feed(
         await Collection.select()
         .where(Collection.slug == collection_slug)
         .first()
-        .output(as_dict=True)
+        
     )
     if col is None:
         return None
@@ -234,7 +234,7 @@ async def render_collection_feed(
         .offset(offset)
         .limit(per_page + 1)
     )
-    rows = await query.output(as_dict=True)
+    rows = await query
     has_more = len(rows) > per_page
     items = rows[:per_page]
 

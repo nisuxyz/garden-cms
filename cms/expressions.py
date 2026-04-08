@@ -81,7 +81,7 @@ async def _resolve_site(key: str) -> str:
         await ContentBlock.select()
         .where(ContentBlock.key == key)
         .first()
-        .output(as_dict=True)
+        
     )
     if row is None:
         return ""
@@ -102,7 +102,7 @@ async def _resolve_collection(
         await Collection.select()
         .where(Collection.slug == slug)
         .first()
-        .output(as_dict=True)
+        
     )
     if col is None:
         return ResolvedCollection(collection={}, items=[])
@@ -129,7 +129,7 @@ async def _resolve_collection(
 
     # Fetch one extra to know if there are more pages.
     fetch_limit = (limit or col["items_per_page"]) + 1
-    rows = await query.limit(fetch_limit).output(as_dict=True)
+    rows = await query.limit(fetch_limit)
 
     has_more = len(rows) > (limit or col["items_per_page"])
     items = rows[: limit or col["items_per_page"]]
@@ -145,7 +145,7 @@ async def _resolve_media(filename: str) -> str:
         await MediaFile.select()
         .where(MediaFile.filename == filename)
         .first()
-        .output(as_dict=True)
+        
     )
     if row is None:
         return ""
