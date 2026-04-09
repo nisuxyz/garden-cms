@@ -319,7 +319,10 @@ async def content_update(
 
     if request.htmx:
         return Response(
-            content='<span class="meta"><ins>Saved ✓</ins></span>',
+            content=(
+                f'<button type="submit" id="save-btn-{block_id}">Saved ✓</button>'
+                f'<script>setTimeout(()=>{{let e=document.getElementById("save-btn-{block_id}");if(e)e.textContent="Save"}},2000)</script>'
+            ),
             status_code=200,
             media_type="text/html",
         )
@@ -479,6 +482,8 @@ async def items_new(col_id: int) -> Template:
     col = await Collection.select().where(Collection.id == col_id).first()
     if not col:
         raise NotFoundException()
+    if isinstance(col["fields_schema"], str):
+        col["fields_schema"] = json.loads(col["fields_schema"])
     return Template(
         template_name="admin/item_edit.html",
         context={"collection": col, "item": None},
@@ -501,8 +506,11 @@ async def items_create(
     sort_order = int(data.get("sort_order") or 0)
 
     # Build data dict from fields_schema.
+    fields_schema = col.get("fields_schema", [])
+    if isinstance(fields_schema, str):
+        fields_schema = json.loads(fields_schema)
     item_data = {}
-    for field_def in col.get("fields_schema", []):
+    for field_def in fields_schema:
         fname = field_def["name"]
         item_data[fname] = (data.get(f"field_{fname}") or "").strip()
 
@@ -532,6 +540,10 @@ async def items_edit(col_id: int, item_id: int) -> Template:
     )
     if not item:
         raise NotFoundException()
+    if isinstance(col["fields_schema"], str):
+        col["fields_schema"] = json.loads(col["fields_schema"])
+    if isinstance(item.get("data"), str):
+        item["data"] = json.loads(item["data"]) if item["data"] else {}
     return Template(
         template_name="admin/item_edit.html",
         context={"collection": col, "item": item},
@@ -562,8 +574,11 @@ async def items_update(
     featured = data.get("featured") == "on"
     sort_order = int(data.get("sort_order") or 0)
 
+    fields_schema = col.get("fields_schema", [])
+    if isinstance(fields_schema, str):
+        fields_schema = json.loads(fields_schema)
     item_data = {}
-    for field_def in col.get("fields_schema", []):
+    for field_def in fields_schema:
         fname = field_def["name"]
         item_data[fname] = (data.get(f"field_{fname}") or "").strip()
 

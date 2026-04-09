@@ -158,7 +158,11 @@ def _resolve_item(field_name: str, ctx: ExpressionContext) -> str:
     if ctx.item is None:
         return ""
     # ``data`` is the JSON blob; also check top-level columns.
-    value = ctx.item.get(field_name) or ctx.item.get("data", {}).get(field_name, "")
+    data = ctx.item.get("data", {})
+    if isinstance(data, str):
+        import json
+        data = json.loads(data) if data else {}
+    value = ctx.item.get(field_name) or data.get(field_name, "")
     if value is None:
         return ""
     return str(value)

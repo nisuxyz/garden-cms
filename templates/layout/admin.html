@@ -1,8 +1,5 @@
-{% extends "layout/base.html" %}
-
-{% block title %}Admin{% endblock %}
-
-{% block head %}
+{% extends "layout/base.html" %} {% block title %}Admin{% endblock %} {% block
+head %}
 <style>
   .admin-layout {
     display: grid;
@@ -45,18 +42,53 @@
     border-radius: var(--pico-border-radius);
     font-size: 0.9rem;
   }
-</style>
-{% endblock %}
 
-{% block body %}
+  /* htmx button spinner — any button with .btn-spinner shows a
+     spinning indicator while htmx adds .htmx-request to it. */
+  .btn-spinner {
+    position: relative;
+    min-width: 4.5rem;
+    transition: opacity 150ms;
+  }
+  .btn-spinner.htmx-request {
+    color: transparent;
+    pointer-events: none;
+  }
+  .btn-spinner.htmx-request::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid currentColor;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: btn-spin 0.6s linear infinite;
+  }
+  @keyframes btn-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+</style>
+{% endblock %} {% block body %}
 <header>
   <nav>
-    <ul><li><strong><a href="/" style="text-decoration:none">&larr; site</a></strong></li></ul>
-    <ul><li><strong>admin</strong></li></ul>
+    <ul>
+      <li>
+        <strong
+          ><a href="/" style="text-decoration: none">&larr; site</a></strong
+        >
+      </li>
+    </ul>
+    <ul>
+      <li><strong>admin</strong></li>
+    </ul>
   </nav>
 </header>
 <main>
-<div class="admin-layout">
+  <div class="admin-layout">
     <aside class="admin-sidebar">
       <nav>
         <ul>
@@ -74,7 +106,7 @@
         </ul>
       </nav>
     </aside>
-  <section>{% block admin_content %}{% endblock %}</section>
-</div>
+    <section>{% block admin_content %}{% endblock %}</section>
+  </div>
 </main>
 {% endblock %}

@@ -1,6 +1,5 @@
-{% extends "layout/admin.html" %}
-{% block title %}Themes{% endblock %}
-{% block admin_content %}
+{% extends "layout/admin.html" %} {% block title %}Themes{% endblock %} {% block
+admin_content %}
 <hgroup>
   <h2>Themes</h2>
   <p><a href="/admin/themes/new" role="button">New theme</a></p>
@@ -9,7 +8,13 @@
 {% if themes %}
 <table>
   <thead>
-    <tr><th>Name</th><th>Slug</th><th>Status</th><th></th><th></th></tr>
+    <tr>
+      <th>Name</th>
+      <th>Slug</th>
+      <th>Status</th>
+      <th></th>
+      <th></th>
+    </tr>
   </thead>
   <tbody>
     {% for theme in themes %}
@@ -19,19 +24,48 @@
       <td>
         {% if theme.active %}<ins>active</ins>
         {% else %}
-        <form method="post" action="/admin/themes/{{ theme.id }}/activate" style="margin:0; display:inline;">
-          <button type="submit" class="outline" style="padding:0.15rem 0.4rem; font-size:0.75rem;">Activate</button>
+        <form
+          method="post"
+          action="/admin/themes/{{ theme.id }}/activate"
+          style="margin: 0; display: inline"
+        >
+          <button
+            type="submit"
+            class="outline"
+            style="padding: 0.15rem 0.4rem; font-size: 0.75rem"
+          >
+            Activate
+          </button>
         </form>
         {% endif %}
       </td>
-      <td><a href="/admin/themes/{{ theme.id }}/edit" class="outline" role="button" style="padding:0.25rem 0.5rem;">Edit</a></td>
+      <td>
+        <a
+          href="/admin/themes/{{ theme.id }}/edit"
+          class="outline"
+          role="button"
+          style="padding: 0.25rem 0.5rem"
+          >Edit</a
+        >
+      </td>
       <td>
         {% if not theme.active %}
-        <form method="post" action="/admin/themes/{{ theme.id }}/delete"
-              hx-post="/admin/themes/{{ theme.id }}/delete"
-              hx-target="#theme-row-{{ theme.id }}" hx-swap="outerHTML"
-              hx-confirm="Delete theme &quot;{{ theme.name }}&quot;?">
-          <button type="submit" class="outline secondary" style="padding:0.25rem 0.5rem;">Delete</button>
+        <form
+          method="post"
+          action="/admin/themes/{{ theme.id }}/delete"
+          hx-post="/admin/themes/{{ theme.id }}/delete"
+          hx-target="#theme-row-{{ theme.id }}"
+          hx-swap="outerHTML"
+          hx-confirm='Delete theme "{{ theme.name }}"?'
+          hx-indicator="find .btn-spinner"
+        >
+          <button
+            type="submit"
+            class="outline secondary btn-spinner"
+            style="padding: 0.25rem 0.5rem"
+          >
+            Delete
+          </button>
         </form>
         {% endif %}
       </td>
@@ -41,5 +75,4 @@
 </table>
 {% else %}
 <p>No themes yet. <a href="/admin/themes/new">Create one &rarr;</a></p>
-{% endif %}
-{% endblock %}
+{% endif %} {% endblock %}

@@ -1,32 +1,63 @@
-{% extends "layout/admin.html" %}
-{% block title %}{{ collection.name }} — Items{% endblock %}
-{% block admin_content %}
+{% extends "layout/admin.html" %} {% block title %}{{ collection.name }} —
+Items{% endblock %} {% block admin_content %}
 <hgroup>
   <h2>{{ collection.name }}</h2>
   <p>
-    <a href="/admin/collections/{{ collection.id }}/items/new" role="button">New item</a>
-    <a href="/admin/collections/{{ collection.id }}/edit" class="outline" role="button">Edit collection</a>
+    <a href="/admin/collections/{{ collection.id }}/items/new" role="button"
+      >New item</a
+    >
+    <a
+      href="/admin/collections/{{ collection.id }}/edit"
+      class="outline"
+      role="button"
+      >Edit collection</a
+    >
   </p>
 </hgroup>
 
 {% if items %}
 <table>
   <thead>
-    <tr><th>Title</th><th>Slug</th><th>Featured</th><th>Status</th><th></th></tr>
+    <tr>
+      <th>Title</th>
+      <th>Slug</th>
+      <th>Featured</th>
+      <th>Status</th>
+      <th></th>
+    </tr>
   </thead>
   <tbody>
     {% for item in items %}
     <tr id="item-row-{{ item.id }}">
-      <td><a href="/admin/collections/{{ collection.id }}/items/{{ item.id }}/edit">{{ item.title }}</a></td>
+      <td>
+        <a
+          href="/admin/collections/{{ collection.id }}/items/{{ item.id }}/edit"
+          >{{ item.title }}</a
+        >
+      </td>
       <td><code>{{ item.slug }}</code></td>
       <td>{% if item.featured %}&starf;{% else %}&mdash;{% endif %}</td>
-      <td>{% if item.published %}<ins>published</ins>{% else %}<del>draft</del>{% endif %}</td>
       <td>
-        <form method="post" action="/admin/collections/{{ collection.id }}/items/{{ item.id }}/delete"
-              hx-post="/admin/collections/{{ collection.id }}/items/{{ item.id }}/delete"
-              hx-target="#item-row-{{ item.id }}" hx-swap="outerHTML"
-              hx-confirm="Delete &quot;{{ item.title }}&quot;?">
-          <button type="submit" class="outline secondary" style="padding:0.25rem 0.5rem;">Delete</button>
+        {% if item.published %}<ins>published</ins>{% else %}<del>draft</del>{%
+        endif %}
+      </td>
+      <td>
+        <form
+          method="post"
+          action="/admin/collections/{{ collection.id }}/items/{{ item.id }}/delete"
+          hx-post="/admin/collections/{{ collection.id }}/items/{{ item.id }}/delete"
+          hx-target="#item-row-{{ item.id }}"
+          hx-swap="outerHTML"
+          hx-confirm='Delete "{{ item.title }}"?'
+          hx-indicator="find .btn-spinner"
+        >
+          <button
+            type="submit"
+            class="outline secondary btn-spinner"
+            style="padding: 0.25rem 0.5rem"
+          >
+            Delete
+          </button>
         </form>
       </td>
     </tr>
@@ -34,6 +65,10 @@
   </tbody>
 </table>
 {% else %}
-<p>No items yet. <a href="/admin/collections/{{ collection.id }}/items/new">Create one &rarr;</a></p>
-{% endif %}
-{% endblock %}
+<p>
+  No items yet.
+  <a href="/admin/collections/{{ collection.id }}/items/new"
+    >Create one &rarr;</a
+  >
+</p>
+{% endif %} {% endblock %}

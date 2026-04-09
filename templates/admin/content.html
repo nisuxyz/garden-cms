@@ -1,22 +1,29 @@
-{% extends "layout/admin.html" %}
-{% block title %}Content Blocks{% endblock %}
+{% extends "layout/admin.html" %} {% block title %}Content Blocks{% endblock %}
 {% block admin_content %}
 <h2>Content Blocks</h2>
-<p class="meta">Global values available in page markdown via <code>${site.key}</code>.</p>
+<p class="meta">
+  Global values available in page markdown via <code>${site.key}</code>.
+</p>
 
 <!-- New block form -->
 <details>
   <summary role="button" class="outline">Add new block</summary>
-  <form method="post" action="/admin/content" style="margin-top:1rem;">
-    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:1rem;">
+  <form method="post" action="/admin/content" style="margin-top: 1rem">
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem">
       <label>
         Key
-        <input type="text" name="key" required placeholder="e.g. hero_headline"
-               pattern="[a-z0-9_\.]+" title="Lowercase, numbers, underscores, dots">
+        <input
+          type="text"
+          name="key"
+          required
+          placeholder="e.g. hero_headline"
+          pattern="[a-z0-9_\.]+"
+          title="Lowercase, numbers, underscores, dots"
+        />
       </label>
       <label>
         Label
-        <input type="text" name="label" required placeholder="Hero Headline">
+        <input type="text" name="label" required placeholder="Hero Headline" />
       </label>
       <label>
         Type
@@ -39,38 +46,58 @@
 <article id="block-{{ block.id }}">
   <header>
     <strong>{{ block.label }}</strong>
-    <code class="meta" style="float:right;">{{ block.key }}</code>
-    <small class="meta" style="float:right; margin-right:1rem;">{{ block.block_type }}</small>
+    <code class="meta" style="float: right">{{ block.key }}</code>
+    <small class="meta" style="float: right; margin-right: 1rem"
+      >{{ block.block_type }}</small
+    >
   </header>
-  <form method="post" action="/admin/content/{{ block.id }}"
-        hx-post="/admin/content/{{ block.id }}"
-        hx-target="#saved-{{ block.id }}"
-        hx-swap="outerHTML">
+  <form
+    method="post"
+    action="/admin/content/{{ block.id }}"
+    hx-post="/admin/content/{{ block.id }}"
+    hx-target="#save-btn-{{ block.id }}"
+    hx-swap="outerHTML"
+    hx-indicator="#save-btn-{{ block.id }}"
+  >
     {% if block.block_type == "markdown" %}
     <textarea name="value" rows="5">{{ block.value }}</textarea>
     <small class="meta">Markdown supported.</small>
     {% elif block.block_type == "image" %}
-    <input type="text" name="value" value="{{ block.value }}" placeholder="filename from media library">
+    <input
+      type="text"
+      name="value"
+      value="{{ block.value }}"
+      placeholder="filename from media library"
+    />
     <small class="meta">Enter the filename of an uploaded media file.</small>
     {% else %}
-    <input type="text" name="value" value="{{ block.value }}">
+    <input type="text" name="value" value="{{ block.value }}" />
     {% endif %}
-    <footer style="display:flex; align-items:center; gap:1rem;">
-      <button type="submit">Save</button>
-      <span id="saved-{{ block.id }}" class="meta"></span>
-      <form method="post" action="/admin/content/{{ block.id }}/delete"
-            hx-post="/admin/content/{{ block.id }}/delete"
-            hx-target="#block-{{ block.id }}" hx-swap="outerHTML"
-            hx-confirm="Delete block &quot;{{ block.key }}&quot;?"
-            style="margin:0;">
-        <button type="submit" class="outline secondary" style="padding:0.25rem 0.5rem;">Delete</button>
+    <footer style="display: flex; align-items: center; gap: 1rem">
+      <button type="submit" id="save-btn-{{ block.id }}" class="btn-spinner">
+        Save
+      </button>
+      <form
+        method="post"
+        action="/admin/content/{{ block.id }}/delete"
+        hx-post="/admin/content/{{ block.id }}/delete"
+        hx-target="#block-{{ block.id }}"
+        hx-swap="outerHTML"
+        hx-confirm='Delete block "{{ block.key }}"?'
+        hx-indicator="find .btn-spinner"
+        style="margin: 0"
+      >
+        <button
+          type="submit"
+          class="outline secondary btn-spinner"
+          style="padding: 0.25rem 0.5rem"
+        >
+          Delete
+        </button>
       </form>
     </footer>
   </form>
 </article>
-{% endfor %}
-
-{% if not blocks %}
+{% endfor %} {% if not blocks %}
 <p>No content blocks yet. Use the form above to create one.</p>
-{% endif %}
-{% endblock %}
+{% endif %} {% endblock %}

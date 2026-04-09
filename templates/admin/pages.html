@@ -92,10 +92,11 @@ admin_content %}
           hx-target="#page-row-{{ page.id }}"
           hx-swap="outerHTML"
           hx-confirm='Delete "{{ page.title }}"?'
+          hx-indicator="find .btn-spinner"
         >
           <button
             type="submit"
-            class="outline secondary"
+            class="outline secondary btn-spinner"
             style="padding: 0.25rem 0.5rem"
           >
             Delete
