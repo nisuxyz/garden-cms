@@ -1,38 +1,63 @@
-{% extends "layout/admin.html" %}
-{% block title %}{% if page %}Edit Page{% else %}New Page{% endif %}{% endblock %}
-{% block head %}
-{{ super() }}
+{% extends "layout/admin.html" %} {% block title %}{% if page %}Edit Page{% else
+%}New Page{% endif %}{% endblock %} {% block head %} {{ super() }}
 <style>
-  .editor-preview { border: 1px solid var(--pico-muted-border-color); border-radius: var(--pico-border-radius); padding: 1rem; min-height: 10rem; margin-top: 0.5rem; }
+  .editor-preview {
+    border: 1px solid var(--pico-muted-border-color);
+    border-radius: var(--pico-border-radius);
+    padding: 1rem;
+    min-height: 10rem;
+    margin-top: 0.5rem;
+  }
 </style>
-{% endblock %}
-{% block admin_content %}
+{% endblock %} {% block admin_content %}
 <h2>{% if page %}Edit Page{% else %}New Page{% endif %}</h2>
 
-<form method="post"
-      action="{% if page %}/admin/pages/{{ page.id }}/edit{% else %}/admin/pages{% endif %}">
-  <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+<form
+  method="post"
+  action="{% if page %}/admin/pages/{{ page.id }}/edit{% else %}/admin/pages{% endif %}"
+>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem">
     <label>
       Title
-      <input type="text" name="title" value="{{ page.title if page else '' }}" required>
+      <input
+        type="text"
+        name="title"
+        value="{{ page.title if page else '' }}"
+        required
+      />
     </label>
     <label>
       Slug
-      <input type="text" name="slug" value="{{ page.slug if page else '' }}" required
-             pattern="[a-z0-9\-]+" title="Lowercase letters, numbers, and hyphens only">
+      <input
+        type="text"
+        name="slug"
+        value="{{ page.slug if page else '' }}"
+        required
+        pattern="[a-z0-9\-]+"
+        title="Lowercase letters, numbers, and hyphens only"
+      />
     </label>
   </div>
 
   <label>
     Meta Description
-    <input type="text" name="meta_description"
-           value="{{ page.meta_description if page and page.meta_description else '' }}"
-           placeholder="Optional SEO description">
+    <input
+      type="text"
+      name="meta_description"
+      value="{{ page.meta_description if page and page.meta_description else '' }}"
+      placeholder="Optional SEO description"
+    />
   </label>
 
   <label>
     Body (Markdown + <code>${}</code> expressions)
-    <textarea name="body_md" rows="20" style="font-family:monospace; font-size:0.85rem;">{{ page.body_md if page else '' }}</textarea>
+    <textarea
+      name="body_md"
+      rows="20"
+      style="font-family: monospace; font-size: 0.85rem"
+    >
+{{ page.body_md if page else '' }}</textarea
+    >
   </label>
   <small class="meta">
     Use <code>${site.key}</code> for content blocks,
@@ -40,29 +65,68 @@
     <code>${media.filename}</code> for images.
   </small>
 
-  <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:1rem; margin-top:1rem;">
-    <label>
-      Nav Order
-      <input type="number" name="nav_order" value="{{ page.nav_order if page else 0 }}">
-    </label>
+  <div
+    style="
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-top: 1rem;
+    "
+  >
     <fieldset>
       <label>
-        <input type="checkbox" name="is_homepage" {% if page and page.is_homepage %}checked{% endif %}>
+        <input
+          type="checkbox"
+          name="is_homepage"
+          {%
+          if
+          page
+          and
+          page.is_homepage
+          %}checked{%
+          endif
+          %}
+        />
         Homepage
       </label>
       <label>
-        <input type="checkbox" name="show_in_nav" {% if not page or page.show_in_nav %}checked{% endif %}>
+        <input
+          type="checkbox"
+          name="show_in_nav"
+          {%
+          if
+          not
+          page
+          or
+          page.show_in_nav
+          %}checked{%
+          endif
+          %}
+        />
         Show in nav
       </label>
     </fieldset>
     <fieldset>
       <label>
-        <input type="checkbox" name="published" {% if page and page.published %}checked{% endif %}>
+        <input
+          type="checkbox"
+          name="published"
+          {%
+          if
+          page
+          and
+          page.published
+          %}checked{%
+          endif
+          %}
+        />
         Published
       </label>
     </fieldset>
   </div>
 
-  <button type="submit">{% if page %}Save Changes{% else %}Create Page{% endif %}</button>
+  <button type="submit">
+    {% if page %}Save Changes{% else %}Create Page{% endif %}
+  </button>
 </form>
 {% endblock %}

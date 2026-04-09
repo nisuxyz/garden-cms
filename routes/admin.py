@@ -152,7 +152,7 @@ async def pages_list() -> Template:
     rows = await (
         Page.select(
             Page.id, Page.title, Page.slug, Page.published,
-            Page.is_homepage, Page.nav_order,
+            Page.is_homepage, Page.nav_order, Page.show_in_nav,
         )
         .order_by(Page.nav_order)
     )
@@ -174,8 +174,11 @@ async def pages_create(
     meta_description = (data.get("meta_description") or "").strip() or None
     is_homepage = data.get("is_homepage") == "on"
     show_in_nav = data.get("show_in_nav") == "on"
-    nav_order = int(data.get("nav_order") or 0)
     published = data.get("published") == "on"
+
+    # Auto-assign nav_order to end of list.
+    max_row = await Page.raw("SELECT COALESCE(MAX(nav_order), -1) AS mx FROM page")
+    nav_order = (max_row[0]["mx"] if max_row else 0) + 1
 
     if is_homepage:
         await Page.update({Page.is_homepage: False}).where(Page.is_homepage.eq(True))
@@ -216,7 +219,6 @@ async def pages_update(
     meta_description = (data.get("meta_description") or "").strip() or None
     is_homepage = data.get("is_homepage") == "on"
     show_in_nav = data.get("show_in_nav") == "on"
-    nav_order = int(data.get("nav_order") or 0)
     published = data.get("published") == "on"
 
     if is_homepage:
@@ -232,7 +234,6 @@ async def pages_update(
             Page.meta_description: meta_description,
             Page.is_homepage: is_homepage,
             Page.show_in_nav: show_in_nav,
-            Page.nav_order: nav_order,
             Page.published: published,
             Page.updated_at: datetime.now(timezone.utc),
         }
@@ -245,6 +246,33 @@ async def pages_delete(page_id: int, request: HTMXRequest) -> Response | Redirec
     await Page.delete().where(Page.id == page_id)
     if request.htmx:
         return Response(content="", status_code=200)
+    return Redirect(path="/admin/pages")
+
+
+@post("/pages/{page_id:int}/reorder")
+async def pages_reorder(
+    page_id: int,
+    data: Annotated[dict, Body(media_type=RequestEncodingType.URL_ENCODED)],
+) -> Redirect:
+    direction = (data.get("direction") or "").strip()
+    if direction not in ("up", "down"):
+        return Redirect(path="/admin/pages")
+
+    rows = await (
+        Page.select(Page.id, Page.nav_order)
+        .order_by(Page.nav_order)
+    )
+    idx = next((i for i, r in enumerate(rows) if r["id"] == page_id), None)
+    if idx is None:
+        return Redirect(path="/admin/pages")
+
+    swap_idx = idx - 1 if direction == "up" else idx + 1
+    if swap_idx < 0 or swap_idx >= len(rows):
+        return Redirect(path="/admin/pages")
+
+    a, b = rows[idx], rows[swap_idx]
+    await Page.update({Page.nav_order: b["nav_order"]}).where(Page.id == a["id"])
+    await Page.update({Page.nav_order: a["nav_order"]}).where(Page.id == b["id"])
     return Redirect(path="/admin/pages")
 
 
@@ -732,7 +760,7 @@ _password_login_router = Router(
 _public_handlers = [login_page, logout, _password_login_router, oauth_authorize, oauth_callback]
 _guarded_handlers = [
     dashboard,
-    pages_list, pages_new, pages_create, pages_edit, pages_update, pages_delete,
+    pages_list, pages_new, pages_create, pages_edit, pages_update, pages_delete, pages_reorder,
     content_list, content_create, content_update, content_delete,
     collections_list, collections_new, collections_create, collections_edit,
     collections_update, collections_delete,
