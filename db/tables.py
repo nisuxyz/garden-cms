@@ -74,6 +74,7 @@ class Collection(Table, tablename="collections"):
     fields_schema = JSON(default=[])  # [{name, type, required}, …]
     card_template = Text(default="")  # HTML with ${item.*}
     detail_template = Text(default="")  # Markdown with ${item.*}
+    empty_template = Text(default="")  # HTML shown when collection has 0 items
     items_per_page = Integer(default=10)
     created_at = Timestamptz()
     updated_at = Timestamptz(auto_update=datetime.now)

@@ -368,6 +368,7 @@ async def collections_create(
     fields_schema_raw = (data.get("fields_schema") or "[]").strip()
     card_template = (data.get("card_template") or "").strip()
     detail_template = (data.get("detail_template") or "").strip()
+    empty_template = (data.get("empty_template") or "").strip()
     items_per_page = int(data.get("items_per_page") or 10)
 
     try:
@@ -382,6 +383,7 @@ async def collections_create(
         fields_schema=fields_schema,
         card_template=card_template,
         detail_template=detail_template,
+        empty_template=empty_template,
         items_per_page=items_per_page,
     ).save()
     return Redirect(path="/admin/collections")
@@ -410,6 +412,7 @@ async def collections_update(
     fields_schema_raw = (data.get("fields_schema") or "[]").strip()
     card_template = (data.get("card_template") or "").strip()
     detail_template = (data.get("detail_template") or "").strip()
+    empty_template = (data.get("empty_template") or "").strip()
     items_per_page = int(data.get("items_per_page") or 10)
 
     try:
@@ -425,6 +428,7 @@ async def collections_update(
             Collection.fields_schema: fields_schema,
             Collection.card_template: card_template,
             Collection.detail_template: detail_template,
+            Collection.empty_template: empty_template,
             Collection.items_per_page: items_per_page,
             Collection.updated_at: datetime.now(timezone.utc),
         }

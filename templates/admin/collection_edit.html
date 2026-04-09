@@ -1,61 +1,122 @@
-{% extends "layout/admin.html" %}
-{% block title %}{% if collection %}Edit Collection{% else %}New Collection{% endif %}{% endblock %}
-{% block admin_content %}
+{% extends "layout/admin.html" %} {% block title %}{% if collection %}Edit
+Collection{% else %}New Collection{% endif %}{% endblock %} {% block
+admin_content %}
 <h2>{% if collection %}Edit Collection{% else %}New Collection{% endif %}</h2>
 
-<form method="post"
-      action="{% if collection %}/admin/collections/{{ collection.id }}/edit{% else %}/admin/collections{% endif %}">
-  <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:1rem;">
+<form
+  method="post"
+  action="{% if collection %}/admin/collections/{{ collection.id }}/edit{% else %}/admin/collections{% endif %}"
+>
+  <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem">
     <label>
       Name
-      <input type="text" name="name" value="{{ collection.name if collection else '' }}" required>
+      <input
+        type="text"
+        name="name"
+        value="{{ collection.name if collection else '' }}"
+        required
+      />
     </label>
     <label>
       Slug (URL prefix)
-      <input type="text" name="slug" value="{{ collection.slug if collection else '' }}" required
-             pattern="[a-z0-9\-]+" title="Lowercase letters, numbers, and hyphens only">
+      <input
+        type="text"
+        name="slug"
+        value="{{ collection.slug if collection else '' }}"
+        required
+        pattern="[a-z0-9\-]+"
+        title="Lowercase letters, numbers, and hyphens only"
+      />
     </label>
     <label>
       Items per page
-      <input type="number" name="items_per_page" value="{{ collection.items_per_page if collection else 10 }}" min="1">
+      <input
+        type="number"
+        name="items_per_page"
+        value="{{ collection.items_per_page if collection else 10 }}"
+        min="1"
+      />
     </label>
   </div>
 
   <label>
     Description
-    <input type="text" name="description"
-           value="{{ collection.description if collection and collection.description else '' }}">
+    <input
+      type="text"
+      name="description"
+      value="{{ collection.description if collection and collection.description else '' }}"
+    />
   </label>
 
   <label>
     Fields Schema (JSON)
-    <textarea name="fields_schema" rows="8" style="font-family:monospace; font-size:0.85rem;">{% if collection %}{{ collection.fields_schema | tojson(indent=2) }}{% else %}[
+    <textarea
+      name="fields_schema"
+      rows="8"
+      style="font-family: monospace; font-size: 0.85rem"
+    >
+{% if collection %}{{ collection.fields_schema | tojson(indent=2) }}{% else %}[
   {"name": "summary", "type": "text", "required": true},
   {"name": "body", "type": "markdown", "required": true},
   {"name": "tags", "type": "list", "required": false}
-]{% endif %}</textarea>
+]{% endif %}</textarea
+    >
   </label>
   <small class="meta">
-    Array of objects: <code>{"name": "field_name", "type": "text|markdown|image|list|url|boolean|date", "required": true|false}</code>
+    Array of objects:
+    <code
+      >{"name": "field_name", "type":
+      "text|markdown|image|list|url|boolean|date", "required": true|false}</code
+    >
   </small>
 
   <label>
     Card Template (HTML with <code>${item.*}</code>)
-    <textarea name="card_template" rows="10" style="font-family:monospace; font-size:0.85rem;">{{ collection.card_template if collection else '' }}</textarea>
+    <textarea
+      name="card_template"
+      rows="10"
+      style="font-family: monospace; font-size: 0.85rem"
+    >
+{{ collection.card_template if collection else '' }}</textarea
+    >
   </label>
   <small class="meta">
-    Rendered for each item in collection listings. Use <code>${item.title}</code>, <code>${item.slug}</code>,
+    Rendered for each item in collection listings. Use
+    <code>${item.title}</code>, <code>${item.slug}</code>,
     <code>${item.field_name}</code> to inject values.
   </small>
 
   <label>
     Detail Template (Markdown with <code>${item.*}</code>)
-    <textarea name="detail_template" rows="10" style="font-family:monospace; font-size:0.85rem;">{{ collection.detail_template if collection else '' }}</textarea>
+    <textarea
+      name="detail_template"
+      rows="10"
+      style="font-family: monospace; font-size: 0.85rem"
+    >
+{{ collection.detail_template if collection else '' }}</textarea
+    >
   </label>
   <small class="meta">
-    Rendered as the full detail page for a single item. Markdown + <code>${}</code> expressions supported.
+    Rendered as the full detail page for a single item. Markdown +
+    <code>${}</code> expressions supported.
   </small>
 
-  <button type="submit">{% if collection %}Save Changes{% else %}Create Collection{% endif %}</button>
+  <label>
+    Empty List Template (HTML)
+    <textarea
+      name="empty_template"
+      rows="4"
+      style="font-family: monospace; font-size: 0.85rem"
+    >
+{{ collection.empty_template if collection else '' }}</textarea
+    >
+  </label>
+  <small class="meta">
+    Shown when the collection has no published items. Plain HTML.
+  </small>
+
+  <button type="submit">
+    {% if collection %}Save Changes{% else %}Create Collection{% endif %}
+  </button>
 </form>
 {% endblock %}

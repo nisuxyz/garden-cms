@@ -71,6 +71,9 @@ def render_card_list(
     if not col:
         return ""
 
+    if not rc.items:
+        return col.get("empty_template", "")
+
     card_tpl = col.get("card_template", "")
     slug = col.get("slug", "")
     parts: list[str] = []
