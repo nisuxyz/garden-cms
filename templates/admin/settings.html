@@ -17,25 +17,26 @@ block admin_content %}
       name="storage_backend"
       id="storage-backend"
       onchange="
-        document.getElementById('s3-fields').style.display =
-          this.value === 's3' ? '' : 'none'
+        document.getElementById('s3-fields').hidden = this.value !== 's3'
       "
     >
-      <option value="local" {% if settings.storage_backend != 's3' %}selected{% endif %}>
+      <option
+        value="local"
+        {% if settings.storage_backend != "s3" %}selected{% endif %}
+      >
         Local Disk
       </option>
-      <option value="s3" {% if settings.storage_backend == 's3' %}selected{% endif %}>
+      <option
+        value="s3"
+        {% if settings.storage_backend == "s3" %}selected{% endif %}
+      >
         S3-Compatible
       </option>
     </select>
   </label>
 
-  <div
-    id="s3-fields"
-    style="{% if settings.storage_backend != 's3' %}display:none;{% endif %}"
-  >
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem">
-      <label>
+  <div id="s3-fields" {% if settings.storage_backend !="s3" %}hidden{% endif %}>
+    <label>
         Bucket
         <input
           type="text"
@@ -53,7 +54,6 @@ block admin_content %}
           placeholder="us-east-1"
         />
       </label>
-    </div>
 
     <label>
       Endpoint URL
@@ -63,15 +63,14 @@ block admin_content %}
         value="{{ settings.s3_endpoint_url }}"
         placeholder="https://s3.amazonaws.com (leave blank for AWS default)"
       />
-      <small class="meta"
+      <small
         >Custom endpoint for MinIO, Cloudflare R2, or other S3-compatible
         providers.</small
       >
     </label>
 
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem">
-      <label>
-        Access Key ID
+    <label>
+      Access Key ID
         <input
           type="text"
           name="s3_access_key_id"
@@ -88,18 +87,16 @@ block admin_content %}
           autocomplete="off"
         />
       </label>
-    </div>
 
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem">
-      <label>
-        Key Prefix
+    <label>
+      Key Prefix
         <input
           type="text"
           name="s3_prefix"
           value="{{ settings.s3_prefix }}"
           placeholder="uploads"
         />
-        <small class="meta">Optional path prefix for all uploaded files.</small>
+        <small>Optional path prefix for all uploaded files.</small>
       </label>
       <label>
         Public URL Base
@@ -109,12 +106,11 @@ block admin_content %}
           value="{{ settings.s3_public_url }}"
           placeholder="https://cdn.example.com"
         />
-        <small class="meta"
+        <small
           >If set, media URLs serve directly from this origin instead of
           proxying through the app.</small
         >
       </label>
-    </div>
   </div>
 
   <h3>Site</h3>
@@ -124,12 +120,15 @@ block admin_content %}
     <select name="favicon">
       <option value="">Default (built-in)</option>
       {% for file in media_files %}
-      <option value="{{ file.filename }}" {% if settings.favicon == file.filename %}selected{% endif %}>
+      <option
+        value="{{ file.filename }}"
+        {% if settings.favicon == file.filename %}selected{% endif %}
+      >
         {{ file.original_name }} ({{ file.filename }})
       </option>
       {% endfor %}
     </select>
-    <small class="meta"
+    <small
       >Select an uploaded image to use as the site favicon. Recommended: SVG,
       PNG, or ICO.</small
     >

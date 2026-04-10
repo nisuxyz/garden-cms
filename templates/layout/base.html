@@ -15,11 +15,17 @@
         document.documentElement.setAttribute("data-theme", saved);
       })();
     </script>
-    <title>{% block title %}{{ title | default("bussin", true) }}{% endblock %}</title>
-    <link rel="stylesheet"
-          href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.classless.min.css" />
-    <link rel="stylesheet"
-          href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.colors.min.css" />
+    <title>
+      {% block title %}{{ title | default("bussin", true) }}{% endblock %}
+    </title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.classless.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.colors.min.css"
+    />
     <link rel="icon" href="/favicon.ico" />
     <script src="https://cdn.jsdelivr.net/npm/htmx.org@next" defer></script>
     {% block head %}{{ extra_head | default("", true) }}{% endblock %}

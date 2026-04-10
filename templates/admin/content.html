@@ -1,16 +1,15 @@
 {% extends "layout/admin.html" %} {% block title %}Content Blocks{% endblock %}
 {% block admin_content %}
 <h2>Content Blocks</h2>
-<p class="meta">
+<p>
   Global values available in page markdown via <code>${site.key}</code>.
 </p>
 
 <!-- New block form -->
 <details>
-  <summary role="button" class="outline">Add new block</summary>
-  <form method="post" action="/admin/content" style="margin-top: 1rem">
-    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem">
-      <label>
+  <summary>Add new block</summary>
+  <form method="post" action="/admin/content">
+    <label>
         Key
         <input
           type="text"
@@ -33,7 +32,6 @@
           <option value="image">Image (filename)</option>
         </select>
       </label>
-    </div>
     <label>
       Value
       <textarea name="value" rows="3"></textarea>
@@ -46,9 +44,8 @@
 <article id="block-{{ block.id }}">
   <header>
     <strong>{{ block.label }}</strong>
-    <code class="meta" style="float: right">{{ block.key }}</code>
-    <small class="meta" style="float: right; margin-right: 1rem"
-      >{{ block.block_type }}</small
+    <small
+      >{{ block.block_type }} &middot; <code>{{ block.key }}</code></small
     >
   </header>
   <form
@@ -61,7 +58,7 @@
   >
     {% if block.block_type == "markdown" %}
     <textarea name="value" rows="5">{{ block.value }}</textarea>
-    <small class="meta">Markdown supported.</small>
+    <small>Markdown supported.</small>
     {% elif block.block_type == "image" %}
     <input
       type="text"
@@ -69,32 +66,22 @@
       value="{{ block.value }}"
       placeholder="filename from media library"
     />
-    <small class="meta">Enter the filename of an uploaded media file.</small>
+    <small>Enter the filename of an uploaded media file.</small>
     {% else %}
     <input type="text" name="value" value="{{ block.value }}" />
     {% endif %}
-    <footer style="display: flex; align-items: center; gap: 1rem">
-      <button type="submit" id="save-btn-{{ block.id }}" class="btn-spinner">
+    <footer>
+      <button type="submit" id="save-btn-{{ block.id }}">
         Save
       </button>
-      <form
-        method="post"
-        action="/admin/content/{{ block.id }}/delete"
+      <button
         hx-post="/admin/content/{{ block.id }}/delete"
         hx-target="#block-{{ block.id }}"
         hx-swap="outerHTML"
         hx-confirm='Delete block "{{ block.key }}"?'
-        hx-indicator="find .btn-spinner"
-        style="margin: 0"
       >
-        <button
-          type="submit"
-          class="outline secondary btn-spinner"
-          style="padding: 0.25rem 0.5rem"
-        >
-          Delete
-        </button>
-      </form>
+        Delete
+      </button>
     </footer>
   </form>
 </article>

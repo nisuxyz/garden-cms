@@ -9,15 +9,7 @@
     action="/admin/media/upload"
     enctype="multipart/form-data"
   >
-    <div
-      style="
-        display: grid;
-        grid-template-columns: 1fr 1fr auto;
-        gap: 1rem;
-        align-items: end;
-      "
-    >
-      <label>
+    <label>
         File
         <input
           type="file"
@@ -30,71 +22,40 @@
         Alt Text
         <input type="text" name="alt_text" placeholder="Image description" />
       </label>
-      <button type="submit">Upload</button>
-    </div>
-    <small class="meta">Allowed: JPG, PNG, GIF, WebP, SVG. Max 10 MB.</small>
+    <button type="submit">Upload</button>
+    <small>Allowed: JPG, PNG, GIF, WebP, SVG. Max 10 MB.</small>
   </form>
 </article>
 
 {% if files %}
-<div
-  style="
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 1rem;
-  "
->
   {% for file in files %}
-  <article id="media-{{ file.id }}" style="padding: 0; overflow: hidden">
+  <article id="media-{{ file.id }}">
     {% if file.mime_type != "image/svg+xml" %}
     <img
       src="{{ media_url(file.filename) }}"
       alt="{{ file.alt_text or file.original_name }}"
-      style="width: 100%; height: 150px; object-fit: cover"
     />
     {% else %}
-    <div
-      style="
-        width: 100%;
-        height: 150px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: var(--pico-card-background-color);
-      "
-    >
+    <div>
       <small>SVG</small>
     </div>
     {% endif %}
-    <div style="padding: 0.75rem">
+    <footer>
       <small><strong>{{ file.original_name }}</strong></small
       ><br />
-      <code style="font-size: 0.7rem; word-break: break-all"
-        >{{ file.filename }}</code
-      ><br />
-      <small class="meta">{{ (file.file_size / 1024) | round(1) }} KB</small>
-      <form
-        method="post"
-        action="/admin/media/{{ file.id }}/delete"
+      <code>{{ file.filename }}</code><br />
+      <small>{{ (file.file_size / 1024) | round(1) }} KB</small>
+      <button
         hx-post="/admin/media/{{ file.id }}/delete"
         hx-target="#media-{{ file.id }}"
         hx-swap="outerHTML"
         hx-confirm="Delete this file?"
-        hx-indicator="find .btn-spinner"
-        style="margin: 0.5rem 0 0"
       >
-        <button
-          type="submit"
-          class="outline secondary btn-spinner"
-          style="padding: 0.15rem 0.4rem; font-size: 0.75rem"
-        >
-          Delete
-        </button>
-      </form>
-    </div>
+        Delete
+      </button>
+    </footer>
   </article>
   {% endfor %}
-</div>
 {% else %}
 <p>No files uploaded yet.</p>
 {% endif %} {% endblock %}

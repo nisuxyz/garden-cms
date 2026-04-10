@@ -23,7 +23,7 @@ _DEFAULT_THEME_TEMPLATE = """\
 <header>
   <nav>
     <ul>
-      <li><strong><a href="/" style="text-decoration:none">&larr; home</a></strong></li>
+      <li><strong><a href="/">&larr; home</a></strong></li>
     </ul>
     <ul>
       {% for item in nav_items %}

@@ -1,22 +1,19 @@
-{% extends "layout/admin.html" %}
-{% block title %}Admin{% endblock %}
-{% block admin_content %}
+{% extends "layout/admin.html" %} {% block title %}Admin{% endblock %} {% block
+admin_content %}
 <h2>Dashboard</h2>
-<div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:1rem;">
-  <article>
+<article>
     <header><strong>Pages</strong></header>
-    <p style="font-size:2rem; margin:0;">{{ page_count }}</p>
+    <p><data value="{{ page_count }}">{{ page_count }}</data></p>
     <footer><a href="/admin/pages">Manage &rarr;</a></footer>
   </article>
   <article>
     <header><strong>Content Blocks</strong></header>
-    <p style="font-size:2rem; margin:0;">{{ block_count }}</p>
+    <p><data value="{{ block_count }}">{{ block_count }}</data></p>
     <footer><a href="/admin/content">Manage &rarr;</a></footer>
   </article>
   <article>
     <header><strong>Collections</strong></header>
-    <p style="font-size:2rem; margin:0;">{{ collection_count }}</p>
+    <p><data value="{{ collection_count }}">{{ collection_count }}</data></p>
     <footer><a href="/admin/collections">Manage &rarr;</a></footer>
-  </article>
-</div>
+</article>
 {% endblock %}

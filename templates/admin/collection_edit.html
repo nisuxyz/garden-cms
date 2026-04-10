@@ -7,8 +7,7 @@ admin_content %}
   method="post"
   action="{% if collection %}/admin/collections/{{ collection.id }}/edit{% else %}/admin/collections{% endif %}"
 >
-  <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem">
-    <label>
+  <label>
       Name
       <input
         type="text"
@@ -37,7 +36,6 @@ admin_content %}
         min="1"
       />
     </label>
-  </div>
 
   <label>
     Description
@@ -50,11 +48,7 @@ admin_content %}
 
   <label>
     Fields Schema (JSON)
-    <textarea
-      name="fields_schema"
-      rows="8"
-      style="font-family: monospace; font-size: 0.85rem"
-    >
+    <textarea name="fields_schema" rows="8">
 {% if collection %}{{ collection.fields_schema | tojson(indent=2) }}{% else %}[
   {"name": "summary", "type": "text", "required": true},
   {"name": "body", "type": "markdown", "required": true},
@@ -62,7 +56,7 @@ admin_content %}
 ]{% endif %}</textarea
     >
   </label>
-  <small class="meta">
+  <small>
     Array of objects:
     <code
       >{"name": "field_name", "type":
@@ -72,15 +66,11 @@ admin_content %}
 
   <label>
     Card Template (HTML with <code>${item.*}</code>)
-    <textarea
-      name="card_template"
-      rows="10"
-      style="font-family: monospace; font-size: 0.85rem"
-    >
+    <textarea name="card_template" rows="10">
 {{ collection.card_template if collection else '' }}</textarea
     >
   </label>
-  <small class="meta">
+  <small>
     Rendered for each item in collection listings. Use
     <code>${item.title}</code>, <code>${item.slug}</code>,
     <code>${item.field_name}</code> to inject values.
@@ -88,30 +78,22 @@ admin_content %}
 
   <label>
     Detail Template (Markdown with <code>${item.*}</code>)
-    <textarea
-      name="detail_template"
-      rows="10"
-      style="font-family: monospace; font-size: 0.85rem"
-    >
+    <textarea name="detail_template" rows="10">
 {{ collection.detail_template if collection else '' }}</textarea
     >
   </label>
-  <small class="meta">
+  <small>
     Rendered as the full detail page for a single item. Markdown +
     <code>${}</code> expressions supported.
   </small>
 
   <label>
     Empty List Template (HTML)
-    <textarea
-      name="empty_template"
-      rows="4"
-      style="font-family: monospace; font-size: 0.85rem"
-    >
+    <textarea name="empty_template" rows="4">
 {{ collection.empty_template if collection else '' }}</textarea
     >
   </label>
-  <small class="meta">
+  <small>
     Shown when the collection has no published items. Plain HTML.
   </small>
 

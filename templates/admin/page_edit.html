@@ -1,23 +1,12 @@
 {% extends "layout/admin.html" %} {% block title %}{% if page %}Edit Page{% else
-%}New Page{% endif %}{% endblock %} {% block head %} {{ super() }}
-<style>
-  .editor-preview {
-    border: 1px solid var(--pico-muted-border-color);
-    border-radius: var(--pico-border-radius);
-    padding: 1rem;
-    min-height: 10rem;
-    margin-top: 0.5rem;
-  }
-</style>
-{% endblock %} {% block admin_content %}
+%}New Page{% endif %}{% endblock %} {% block admin_content %}
 <h2>{% if page %}Edit Page{% else %}New Page{% endif %}</h2>
 
 <form
   method="post"
   action="{% if page %}/admin/pages/{{ page.id }}/edit{% else %}/admin/pages{% endif %}"
 >
-  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem">
-    <label>
+  <label>
       Title
       <input
         type="text"
@@ -37,7 +26,6 @@
         title="Lowercase letters, numbers, and hyphens only"
       />
     </label>
-  </div>
 
   <label>
     Meta Description
@@ -51,29 +39,17 @@
 
   <label>
     Body (Markdown + <code>${}</code> expressions)
-    <textarea
-      name="body_md"
-      rows="20"
-      style="font-family: monospace; font-size: 0.85rem"
-    >
+    <textarea name="body_md" rows="20">
 {{ page.body_md if page else '' }}</textarea
     >
   </label>
-  <small class="meta">
+  <small>
     Use <code>${site.key}</code> for content blocks,
     <code>${collection.slug}</code> for collections,
     <code>${media.filename}</code> for images.
   </small>
 
-  <div
-    style="
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1rem;
-      margin-top: 1rem;
-    "
-  >
-    <fieldset>
+  <fieldset>
       <label>
         <input
           type="checkbox"
@@ -123,7 +99,6 @@
         Published
       </label>
     </fieldset>
-  </div>
 
   <button type="submit">
     {% if page %}Save Changes{% else %}Create Page{% endif %}

@@ -3,15 +3,8 @@ Items{% endblock %} {% block admin_content %}
 <hgroup>
   <h2>{{ collection.name }}</h2>
   <p>
-    <a href="/admin/collections/{{ collection.id }}/items/new" role="button"
-      >New item</a
-    >
-    <a
-      href="/admin/collections/{{ collection.id }}/edit"
-      class="outline"
-      role="button"
-      >Edit collection</a
-    >
+    <a href="/admin/collections/{{ collection.id }}/items/new">New item</a>
+    <a href="/admin/collections/{{ collection.id }}/edit">Edit collection</a>
   </p>
 </hgroup>
 
@@ -19,6 +12,7 @@ Items{% endblock %} {% block admin_content %}
 <table>
   <thead>
     <tr>
+      <th></th>
       <th>Title</th>
       <th>Slug</th>
       <th>Featured</th>
@@ -29,6 +23,42 @@ Items{% endblock %} {% block admin_content %}
   <tbody>
     {% for item in items %}
     <tr id="item-row-{{ item.id }}">
+      <td>
+        <form
+          method="post"
+          action="/admin/collections/{{ collection.id }}/items/{{ item.id }}/reorder"
+        >
+          <input type="hidden" name="direction" value="up" />
+          <button
+            type="submit"
+            {%
+            if
+            loop.first
+            %}disabled{%
+            endif
+            %}
+          >
+            &uarr;
+          </button>
+        </form>
+        <form
+          method="post"
+          action="/admin/collections/{{ collection.id }}/items/{{ item.id }}/reorder"
+        >
+          <input type="hidden" name="direction" value="down" />
+          <button
+            type="submit"
+            {%
+            if
+            loop.last
+            %}disabled{%
+            endif
+            %}
+          >
+            &darr;
+          </button>
+        </form>
+      </td>
       <td>
         <a
           href="/admin/collections/{{ collection.id }}/items/{{ item.id }}/edit"
@@ -42,23 +72,14 @@ Items{% endblock %} {% block admin_content %}
         endif %}
       </td>
       <td>
-        <form
-          method="post"
-          action="/admin/collections/{{ collection.id }}/items/{{ item.id }}/delete"
+        <button
           hx-post="/admin/collections/{{ collection.id }}/items/{{ item.id }}/delete"
           hx-target="#item-row-{{ item.id }}"
           hx-swap="outerHTML"
           hx-confirm='Delete "{{ item.title }}"?'
-          hx-indicator="find .btn-spinner"
         >
-          <button
-            type="submit"
-            class="outline secondary btn-spinner"
-            style="padding: 0.25rem 0.5rem"
-          >
-            Delete
-          </button>
-        </form>
+          Delete
+        </button>
       </td>
     </tr>
     {% endfor %}

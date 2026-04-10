@@ -469,8 +469,7 @@ async def items_list(col_id: int) -> Template:
     rows = await (
         CollectionItem.select()
         .where(CollectionItem.collection == col_id)
-        .order_by(CollectionItem.created_at, ascending=False)
-        
+        .order_by(CollectionItem.sort_order)
     )
     return Template(
         template_name="admin/items.html",
@@ -603,6 +602,35 @@ async def items_update(
             CollectionItem.updated_at: datetime.now(timezone.utc),
         }
     ).where(CollectionItem.id == item_id)
+    return Redirect(path=f"/admin/collections/{col_id}/items")
+
+
+@post("/collections/{col_id:int}/items/{item_id:int}/reorder")
+async def items_reorder(
+    col_id: int,
+    item_id: int,
+    data: Annotated[dict, Body(media_type=RequestEncodingType.URL_ENCODED)],
+) -> Redirect:
+    direction = (data.get("direction") or "").strip()
+    if direction not in ("up", "down"):
+        return Redirect(path=f"/admin/collections/{col_id}/items")
+
+    rows = await (
+        CollectionItem.select(CollectionItem.id, CollectionItem.sort_order)
+        .where(CollectionItem.collection == col_id)
+        .order_by(CollectionItem.sort_order)
+    )
+    idx = next((i for i, r in enumerate(rows) if r["id"] == item_id), None)
+    if idx is None:
+        return Redirect(path=f"/admin/collections/{col_id}/items")
+
+    swap_idx = idx - 1 if direction == "up" else idx + 1
+    if swap_idx < 0 or swap_idx >= len(rows):
+        return Redirect(path=f"/admin/collections/{col_id}/items")
+
+    a, b = rows[idx], rows[swap_idx]
+    await CollectionItem.update({CollectionItem.sort_order: b["sort_order"]}).where(CollectionItem.id == a["id"])
+    await CollectionItem.update({CollectionItem.sort_order: a["sort_order"]}).where(CollectionItem.id == b["id"])
     return Redirect(path=f"/admin/collections/{col_id}/items")
 
 
@@ -856,7 +884,7 @@ _guarded_handlers = [
     content_list, content_create, content_update, content_delete,
     collections_list, collections_new, collections_create, collections_edit,
     collections_update, collections_delete,
-    items_list, items_new, items_create, items_edit, items_update, items_delete,
+    items_list, items_new, items_create, items_edit, items_update, items_reorder, items_delete,
     media_list, media_upload, media_delete,
     settings_page, settings_save,
     themes_list, themes_new, themes_create, themes_edit, themes_update,

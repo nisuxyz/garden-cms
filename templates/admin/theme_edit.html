@@ -1,32 +1,54 @@
-{% extends "layout/admin.html" %}
-{% block title %}{% if theme %}Edit Theme{% else %}New Theme{% endif %}{% endblock %}
-{% block admin_content %}
+{% extends "layout/admin.html" %} {% block title %}{% if theme %}Edit Theme{%
+else %}New Theme{% endif %}{% endblock %} {% block admin_content %}
 <h2>{% if theme %}Edit Theme{% else %}New Theme{% endif %}</h2>
 
-<form method="post"
-      action="{% if theme %}/admin/themes/{{ theme.id }}/edit{% else %}/admin/themes{% endif %}">
-  <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
-    <label>
+<form
+  method="post"
+  action="{% if theme %}/admin/themes/{{ theme.id }}/edit{% else %}/admin/themes{% endif %}"
+>
+  <label>
       Name
-      <input type="text" name="name" value="{{ theme.name if theme else '' }}" required>
+      <input
+        type="text"
+        name="name"
+        value="{{ theme.name if theme else '' }}"
+        required
+      />
     </label>
     <label>
       Slug
-      <input type="text" name="slug" value="{{ theme.slug if theme else '' }}" required
-             pattern="[a-z0-9\-]+" title="Lowercase letters, numbers, and hyphens only">
+      <input
+        type="text"
+        name="slug"
+        value="{{ theme.slug if theme else '' }}"
+        required
+        pattern="[a-z0-9\-]+"
+        title="Lowercase letters, numbers, and hyphens only"
+      />
     </label>
-  </div>
 
   <fieldset>
     <label>
-      <input type="checkbox" name="active" {% if theme and theme.active %}checked{% endif %}>
+      <input
+        type="checkbox"
+        name="active"
+        {%
+        if
+        theme
+        and
+        theme.active
+        %}checked{%
+        endif
+        %}
+      />
       Active (only one theme can be active)
     </label>
   </fieldset>
 
   <label>
     Base Template (Jinja2 — extends layout/base.html)
-    <textarea name="base_template" rows="25" style="font-family:monospace; font-size:0.85rem;">{% if theme %}{{ theme.base_template }}{% else %}{{ "{% extends \"layout/base.html\" %}" }}
+    <textarea name="base_template" rows="25">
+{% if theme %}{{ theme.base_template }}{% else %}{{ "{% extends \"layout/base.html\" %}" }}
 {{ "{% block head %}" }}{{ "{{ extra_head }}" }}{{ "{% endblock %}" }}
 {{ "{% block body %}" }}
 <header>
@@ -42,12 +64,13 @@
 <footer>
   <small>Powered by Bussin CMS</small>
 </footer>
-{{ "{% endblock %}" }}{% endif %}</textarea>
+{{ "{% endblock %}" }}{% endif %}</textarea
+    >
   </label>
-  <small class="meta">
-    Extends <code>layout/base.html</code> (provides &lt;head&gt;, Pico CSS, htmx,
-    FOUC script). Override blocks: <code>head</code> (extra styles/scripts),
-    <code>body</code> (page structure). Variables:
+  <small>
+    Extends <code>layout/base.html</code> (provides &lt;head&gt;, Pico CSS,
+    htmx, FOUC script). Override blocks: <code>head</code> (extra
+    styles/scripts), <code>body</code> (page structure). Variables:
     <code>{{ "{{ title }}" }}</code>, <code>{{ "{{ content }}" }}</code>,
     <code>{{ "{{ nav_items }}" }}</code> (list of {title, slug, url}),
     <code>{{ "{{ extra_head }}" }}</code> (theme CSS &lt;style&gt; tag).
@@ -55,9 +78,13 @@
 
   <label>
     CSS
-    <textarea name="css" rows="15" style="font-family:monospace; font-size:0.85rem;">{{ theme.css if theme else '' }}</textarea>
+    <textarea name="css" rows="15">
+{{ theme.css if theme else '' }}</textarea
+    >
   </label>
 
-  <button type="submit">{% if theme %}Save Changes{% else %}Create Theme{% endif %}</button>
+  <button type="submit">
+    {% if theme %}Save Changes{% else %}Create Theme{% endif %}
+  </button>
 </form>
 {% endblock %}

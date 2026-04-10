@@ -1,14 +1,19 @@
 {% extends "layout/base.html" %} {% block title %}admin login{% endblock %} {%
-block body %}
+block head %} {{ super() }}
+<style>
+  main article {
+    max-width: 24rem;
+    margin: 4rem auto;
+  }
+</style>
+{% endblock %} {% block body %}
 <main>
-  <article style="max-width: 400px; margin: 4rem auto">
+  <article>
     <header><h2>admin</h2></header>
     {% if error %}
     <p><mark>{{ error }}</mark></p>
     {% endif %} {% if oauth_enabled %}
-    <a href="/admin/oauth/authorize" role="button" style="width: 100%"
-      >{{ oauth_provider_name }}</a
-    >
+    <a href="/admin/oauth/authorize">{{ oauth_provider_name }}</a>
     <hr />
     <details>
       <summary>sign in with password</summary>

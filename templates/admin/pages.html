@@ -2,7 +2,7 @@
 admin_content %}
 <hgroup>
   <h2>Pages</h2>
-  <p><a href="/admin/pages/new" role="button">New page</a></p>
+  <p><a href="/admin/pages/new">New page</a></p>
 </hgroup>
 
 {% if pages %}
@@ -21,58 +21,34 @@ admin_content %}
     {% for page in pages %}
     <tr id="page-row-{{ page.id }}">
       <td>
-        <div style="display: flex; flex-direction: column; gap: 0.1rem">
-          <form
-            method="post"
-            action="/admin/pages/{{ page.id }}/reorder"
-            style="margin: 0"
+        <form method="post" action="/admin/pages/{{ page.id }}/reorder">
+          <input type="hidden" name="direction" value="up" />
+          <button
+            type="submit"
+            {%
+            if
+            loop.first
+            %}disabled{%
+            endif
+            %}
           >
-            <input type="hidden" name="direction" value="up" />
-            <button
-              type="submit"
-              class="outline secondary"
-              style="
-                padding: 0.1rem 0.35rem;
-                font-size: 0.75rem;
-                line-height: 1;
-              "
-              {%
-              if
-              loop.first
-              %}
-              disabled{%
-              endif
-              %}
-            >
-              &uarr;
-            </button>
-          </form>
-          <form
-            method="post"
-            action="/admin/pages/{{ page.id }}/reorder"
-            style="margin: 0"
+            &uarr;
+          </button>
+        </form>
+        <form method="post" action="/admin/pages/{{ page.id }}/reorder">
+          <input type="hidden" name="direction" value="down" />
+          <button
+            type="submit"
+            {%
+            if
+            loop.last
+            %}disabled{%
+            endif
+            %}
           >
-            <input type="hidden" name="direction" value="down" />
-            <button
-              type="submit"
-              class="outline secondary"
-              style="
-                padding: 0.1rem 0.35rem;
-                font-size: 0.75rem;
-                line-height: 1;
-              "
-              {%
-              if
-              loop.last
-              %}
-              disabled{%
-              endif
-              %}
-            >
-              &darr;
-            </button>
-          </form>
-        </div>
+            &darr;
+          </button>
+        </form>
       </td>
       <td><a href="/admin/pages/{{ page.id }}/edit">{{ page.title }}</a></td>
       <td><code>{{ page.slug }}</code></td>
@@ -85,23 +61,14 @@ admin_content %}
         endif %}
       </td>
       <td>
-        <form
-          method="post"
-          action="/admin/pages/{{ page.id }}/delete"
+        <button
           hx-post="/admin/pages/{{ page.id }}/delete"
           hx-target="#page-row-{{ page.id }}"
           hx-swap="outerHTML"
           hx-confirm='Delete "{{ page.title }}"?'
-          hx-indicator="find .btn-spinner"
         >
-          <button
-            type="submit"
-            class="outline secondary btn-spinner"
-            style="padding: 0.25rem 0.5rem"
-          >
-            Delete
-          </button>
-        </form>
+          Delete
+        </button>
       </td>
     </tr>
     {% endfor %}

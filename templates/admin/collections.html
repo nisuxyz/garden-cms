@@ -2,7 +2,7 @@
 block admin_content %}
 <hgroup>
   <h2>Collections</h2>
-  <p><a href="/admin/collections/new" role="button">New collection</a></p>
+  <p><a href="/admin/collections/new">New collection</a></p>
 </hgroup>
 
 {% if collections %}
@@ -25,32 +25,17 @@ block admin_content %}
         <a href="/admin/collections/{{ col.id }}/items">{{ col.item_count }}</a>
       </td>
       <td>
-        <a
-          href="/admin/collections/{{ col.id }}/items"
-          class="outline"
-          role="button"
-          style="padding: 0.25rem 0.5rem"
-          >Items</a
-        >
+        <a href="/admin/collections/{{ col.id }}/items">Items</a>
       </td>
       <td>
-        <form
-          method="post"
-          action="/admin/collections/{{ col.id }}/delete"
+        <button
           hx-post="/admin/collections/{{ col.id }}/delete"
           hx-target="#col-row-{{ col.id }}"
           hx-swap="outerHTML"
           hx-confirm='Delete collection "{{ col.name }}" and all its items?'
-          hx-indicator="find .btn-spinner"
         >
-          <button
-            type="submit"
-            class="outline secondary btn-spinner"
-            style="padding: 0.25rem 0.5rem"
-          >
-            Delete
-          </button>
-        </form>
+          Delete
+        </button>
       </td>
     </tr>
     {% endfor %}

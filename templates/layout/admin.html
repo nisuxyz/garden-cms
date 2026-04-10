@@ -1,60 +1,62 @@
 {% extends "layout/base.html" %} {% block title %}Admin{% endblock %} {% block
 head %}
 <style>
-  .admin-layout {
+  /* Two-column admin layout */
+  main {
     display: grid;
-    grid-template-columns: 180px 1fr;
+    grid-template-columns: 12rem 1fr;
     gap: 2rem;
     align-items: start;
   }
-  .admin-sidebar nav ul {
+
+  /* Sidebar */
+  aside nav ul {
     list-style: none;
     padding: 0;
-    margin: 0;
   }
-  .admin-sidebar nav ul li {
+  aside nav li {
     margin-bottom: 0.25rem;
   }
-  .admin-sidebar nav ul li a,
-  .admin-sidebar .logout-form button {
-    display: block;
-    padding: 0.4rem 0.75rem;
-    border-radius: var(--pico-border-radius);
-    text-decoration: none;
-    color: var(--pico-color);
-    font-size: 0.9rem;
-    transition: background 150ms ease;
-  }
-  .admin-sidebar nav ul li a:hover,
-  .admin-sidebar .logout-form button:hover {
-    background: var(--pico-card-background-color);
-  }
-  .admin-sidebar .logout-form {
-    margin: 0;
-  }
-  .admin-sidebar .logout-form button {
+  aside nav a,
+  aside form button {
     all: unset;
     display: block;
-    width: 100%;
-    cursor: pointer;
-    box-sizing: border-box;
     padding: 0.4rem 0.75rem;
     border-radius: var(--pico-border-radius);
     font-size: 0.9rem;
+    cursor: pointer;
+  }
+  aside nav a:hover,
+  aside form button:hover {
+    background: var(--pico-card-background-color);
+  }
+  aside form {
+    margin: 0;
   }
 
-  /* htmx button spinner — any button with .btn-spinner shows a
-     spinning indicator while htmx adds .htmx-request to it. */
-  .btn-spinner {
-    position: relative;
-    min-width: 4.5rem;
-    transition: opacity 150ms;
+  /* Compact table controls */
+  table button {
+    padding: 0.25rem 0.5rem !important;
+    font-size: 0.8rem !important;
   }
-  .btn-spinner.htmx-request {
-    color: transparent;
+  table form {
+    margin: 0;
+  }
+
+  /* Save + Delete footer row */
+  article footer {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  /* HTMX request spinner */
+  button.htmx-request {
+    position: relative;
+    color: transparent !important;
     pointer-events: none;
   }
-  .btn-spinner.htmx-request::after {
+  button.htmx-request::after {
     content: "";
     position: absolute;
     inset: 0;
@@ -64,9 +66,9 @@ head %}
     border: 2px solid currentColor;
     border-top-color: transparent;
     border-radius: 50%;
-    animation: btn-spin 0.6s linear infinite;
+    animation: spin 0.6s linear infinite;
   }
-  @keyframes btn-spin {
+  @keyframes spin {
     to {
       transform: rotate(360deg);
     }
@@ -77,9 +79,7 @@ head %}
   <nav>
     <ul>
       <li>
-        <strong
-          ><a href="/" style="text-decoration: none">&larr; site</a></strong
-        >
+        <strong><a href="/">&larr; site</a></strong>
       </li>
     </ul>
     <ul>
@@ -88,26 +88,24 @@ head %}
   </nav>
 </header>
 <main>
-  <div class="admin-layout">
-    <aside class="admin-sidebar">
-      <nav>
-        <ul>
-          <li><a href="/admin">dashboard</a></li>
-          <li><a href="/admin/pages">pages</a></li>
-          <li><a href="/admin/content">content blocks</a></li>
-          <li><a href="/admin/collections">collections</a></li>
-          <li><a href="/admin/media">media</a></li>
-          <li><a href="/admin/themes">themes</a></li>
-          <li><a href="/admin/settings">settings</a></li>
-          <li>
-            <form method="post" action="/admin/logout" class="logout-form">
-              <button type="submit">log out</button>
-            </form>
-          </li>
-        </ul>
-      </nav>
-    </aside>
-    <section>{% block admin_content %}{% endblock %}</section>
-  </div>
+  <aside>
+    <nav>
+      <ul>
+        <li><a href="/admin">dashboard</a></li>
+        <li><a href="/admin/pages">pages</a></li>
+        <li><a href="/admin/content">content blocks</a></li>
+        <li><a href="/admin/collections">collections</a></li>
+        <li><a href="/admin/media">media</a></li>
+        <li><a href="/admin/themes">themes</a></li>
+        <li><a href="/admin/settings">settings</a></li>
+        <li>
+          <form method="post" action="/admin/logout">
+            <button type="submit">log out</button>
+          </form>
+        </li>
+      </ul>
+    </nav>
+  </aside>
+  <section>{% block admin_content %}{% endblock %}</section>
 </main>
 {% endblock %}

@@ -1,81 +1,184 @@
-{% extends "layout/admin.html" %}
-{% block title %}{% if item %}Edit Item{% else %}New Item{% endif %} — {{ collection.name }}{% endblock %}
-{% block admin_content %}
-<h2>{% if item %}Edit Item{% else %}New Item{% endif %} <small class="meta">in {{ collection.name }}</small></h2>
+{% extends "layout/admin.html" %} {% block title %}{% if item %}Edit Item{% else
+%}New Item{% endif %} — {{ collection.name }}{% endblock %} {% block
+admin_content %}
+<h2>
+  {% if item %}Edit Item{% else %}New Item{% endif %}
+  <small>in {{ collection.name }}</small>
+</h2>
 
-<form method="post"
-      action="{% if item %}/admin/collections/{{ collection.id }}/items/{{ item.id }}/edit{% else %}/admin/collections/{{ collection.id }}/items{% endif %}">
-
-  <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
-    <label>
+<form
+  method="post"
+  action="{% if item %}/admin/collections/{{ collection.id }}/items/{{ item.id }}/edit{% else %}/admin/collections/{{ collection.id }}/items{% endif %}"
+>
+  <label>
       Title
-      <input type="text" name="title" value="{{ item.title if item else '' }}" required>
+      <input
+        type="text"
+        name="title"
+        value="{{ item.title if item else '' }}"
+        required
+      />
     </label>
     <label>
       Slug
-      <input type="text" name="slug" value="{{ item.slug if item else '' }}" required
-             pattern="[a-z0-9\-]+" title="Lowercase letters, numbers, and hyphens only">
+      <input
+        type="text"
+        name="slug"
+        value="{{ item.slug if item else '' }}"
+        required
+        pattern="[a-z0-9\-]+"
+        title="Lowercase letters, numbers, and hyphens only"
+      />
     </label>
-  </div>
 
   <!-- Dynamic fields from collection schema -->
   {% for field in collection.fields_schema %}
   <label>
-    {{ field.name | replace("_", " ") | title }}
-    {% if field.type == "markdown" %}
-    <textarea name="field_{{ field.name }}" rows="10" style="font-family:monospace; font-size:0.85rem;"
-              {% if field.required %}required{% endif %}>{{ item.data[field.name] if item and item.data and field.name in item.data else '' }}</textarea>
-    <small class="meta">Markdown supported.</small>
+    {{ field.name | replace("_", " ") | title }} {% if field.type == "markdown"
+    %}
+    <textarea
+      name="field_{{ field.name }}"
+      rows="10"
+      {%
+      if
+      field.required
+      %}required{%
+      endif
+      %}
+    >
+{{ item.data[field.name] if item and item.data and field.name in item.data else '' }}</textarea
+    >
+    <small>Markdown supported.</small>
     {% elif field.type == "boolean" %}
-    <input type="checkbox" name="field_{{ field.name }}"
-           {% if item and item.data and item.data.get(field.name) in ["on", "true", true] %}checked{% endif %}>
+    <input
+      type="checkbox"
+      name="field_{{ field.name }}"
+      {%
+      if
+      item
+      and
+      item.data
+      and
+      item.data.get(field.name)
+      in
+      ["on", "true", true]
+      %}checked{%
+      endif
+      %}
+    />
     {% elif field.type == "list" %}
-    <input type="text" name="field_{{ field.name }}"
-           value="{{ item.data[field.name] if item and item.data and field.name in item.data else '' }}"
-           placeholder="Comma-separated values"
-           {% if field.required %}required{% endif %}>
-    <small class="meta">Separate items with commas.</small>
+    <input
+      type="text"
+      name="field_{{ field.name }}"
+      value="{{ item.data[field.name] if item and item.data and field.name in item.data else '' }}"
+      placeholder="Comma-separated values"
+      {%
+      if
+      field.required
+      %}required{%
+      endif
+      %}
+    />
+    <small>Separate items with commas.</small>
     {% elif field.type == "url" %}
-    <input type="url" name="field_{{ field.name }}"
-           value="{{ item.data[field.name] if item and item.data and field.name in item.data else '' }}"
-           {% if field.required %}required{% endif %}>
+    <input
+      type="url"
+      name="field_{{ field.name }}"
+      value="{{ item.data[field.name] if item and item.data and field.name in item.data else '' }}"
+      {%
+      if
+      field.required
+      %}required{%
+      endif
+      %}
+    />
     {% elif field.type == "date" %}
-    <input type="date" name="field_{{ field.name }}"
-           value="{{ item.data[field.name] if item and item.data and field.name in item.data else '' }}"
-           {% if field.required %}required{% endif %}>
+    <input
+      type="date"
+      name="field_{{ field.name }}"
+      value="{{ item.data[field.name] if item and item.data and field.name in item.data else '' }}"
+      {%
+      if
+      field.required
+      %}required{%
+      endif
+      %}
+    />
     {% elif field.type == "image" %}
-    <input type="text" name="field_{{ field.name }}"
-           value="{{ item.data[field.name] if item and item.data and field.name in item.data else '' }}"
-           placeholder="Filename from media library"
-           {% if field.required %}required{% endif %}>
-    <small class="meta">Enter the filename of an uploaded media file.</small>
+    <input
+      type="text"
+      name="field_{{ field.name }}"
+      value="{{ item.data[field.name] if item and item.data and field.name in item.data else '' }}"
+      placeholder="Filename from media library"
+      {%
+      if
+      field.required
+      %}required{%
+      endif
+      %}
+    />
+    <small>Enter the filename of an uploaded media file.</small>
     {% else %}
-    <input type="text" name="field_{{ field.name }}"
-           value="{{ item.data[field.name] if item and item.data and field.name in item.data else '' }}"
-           {% if field.required %}required{% endif %}>
+    <input
+      type="text"
+      name="field_{{ field.name }}"
+      value="{{ item.data[field.name] if item and item.data and field.name in item.data else '' }}"
+      {%
+      if
+      field.required
+      %}required{%
+      endif
+      %}
+    />
     {% endif %}
   </label>
   {% endfor %}
 
-  <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:1rem; margin-top:1rem;">
-    <label>
+  <label>
       Sort Order
-      <input type="number" name="sort_order" value="{{ item.sort_order if item else 0 }}">
+      <input
+        type="number"
+        name="sort_order"
+        value="{{ item.sort_order if item else 0 }}"
+      />
     </label>
     <fieldset>
       <label>
-        <input type="checkbox" name="featured" {% if item and item.featured %}checked{% endif %}>
+        <input
+          type="checkbox"
+          name="featured"
+          {%
+          if
+          item
+          and
+          item.featured
+          %}checked{%
+          endif
+          %}
+        />
         Featured
       </label>
     </fieldset>
     <fieldset>
       <label>
-        <input type="checkbox" name="published" {% if item and item.published %}checked{% endif %}>
+        <input
+          type="checkbox"
+          name="published"
+          {%
+          if
+          item
+          and
+          item.published
+          %}checked{%
+          endif
+          %}
+        />
         Published
       </label>
     </fieldset>
-  </div>
 
-  <button type="submit">{% if item %}Save Changes{% else %}Create Item{% endif %}</button>
+  <button type="submit">
+    {% if item %}Save Changes{% else %}Create Item{% endif %}
+  </button>
 </form>
 {% endblock %}
