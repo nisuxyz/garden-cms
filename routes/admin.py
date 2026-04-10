@@ -920,8 +920,17 @@ async def preview(
     print(f"Preview request: type={preview_type}, source={source[:100]}...")
 
     try:
-        if preview_type in ("page", "detail"):
-            # Render as a page/detail body with full theme wrapping.
+        _sample_item = {
+            "title": "Sample Item",
+            "slug": "sample-item",
+            "summary": "This is a preview with sample data.",
+            "body": "<p>Sample body content.</p>",
+            "tags": "sample, preview",
+            "created_at": "2026-01-01",
+        }
+
+        if preview_type == "page":
+            # Render as a page body with full theme wrapping.
             content_html = render_template_string(source)
             theme = await Theme.select().where(Theme.active.eq(True)).first()
             if theme:
@@ -940,17 +949,42 @@ async def preview(
                 html = content_html
 
         elif preview_type == "card":
-            # Render card template with sample item data.
-            sample_item = {
-                "title": "Sample Item",
-                "slug": "sample-item",
-                "summary": "This is a preview of the card template.",
-                "body": "<p>Sample body content.</p>",
-                "tags": "sample, preview",
-                "created_at": "2026-01-01",
-            }
-            content_html = render_template_string(source, {"item": sample_item})
-            html = content_html
+            # Render card template with sample item data + theme wrapping.
+            content_html = render_template_string(source, {"item": _sample_item})
+            theme = await Theme.select().where(Theme.active.eq(True)).first()
+            if theme:
+                from cms.engine import get_nav_items, _get_site_head
+                nav = await get_nav_items()
+                site_head = await _get_site_head()
+                html = render_theme(
+                    base_template=theme["base_template"],
+                    css=theme.get("css", ""),
+                    title="Card Preview",
+                    content_html=content_html,
+                    nav_items=nav,
+                    site_head=site_head,
+                )
+            else:
+                html = content_html
+
+        elif preview_type == "detail":
+            # Render detail template with sample item data + theme wrapping.
+            content_html = render_template_string(source, {"item": _sample_item})
+            theme = await Theme.select().where(Theme.active.eq(True)).first()
+            if theme:
+                from cms.engine import get_nav_items, _get_site_head
+                nav = await get_nav_items()
+                site_head = await _get_site_head()
+                html = render_theme(
+                    base_template=theme["base_template"],
+                    css=theme.get("css", ""),
+                    title="Preview",
+                    content_html=content_html,
+                    nav_items=nav,
+                    site_head=site_head,
+                )
+            else:
+                html = content_html
 
         elif preview_type == "theme":
             # Render as a base template with sample content.

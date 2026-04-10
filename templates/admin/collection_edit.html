@@ -102,12 +102,14 @@ admin_content %}
       data-editor
       data-target="detail-template-textarea"
       data-lang="django"
+      data-preview="detail-preview"
     ></div>
   </label>
   <small>
     Rendered as the full detail page for a single item. Jinja template syntax
     supported.
   </small>
+  <iframe id="detail-preview" class="preview" title="Detail preview"></iframe>
 
   <label>
     Empty List Template (HTML)
@@ -123,15 +125,25 @@ admin_content %}
       data-editor
       data-target="empty-template-textarea"
       data-lang="django"
+      data-preview="empty-preview"
     ></div>
   </label>
   <small> Shown when the collection has no published items. Plain HTML. </small>
+  <iframe id="empty-preview" class="preview" title="Empty template preview"></iframe>
   <script>
     document.addEventListener("DOMContentLoaded", function () {
       var card = document.querySelector(
         "[data-target='card-template-textarea']",
       );
       if (card) card._previewType = "card";
+      var detail = document.querySelector(
+        "[data-target='detail-template-textarea']",
+      );
+      if (detail) detail._previewType = "detail";
+      var empty = document.querySelector(
+        "[data-target='empty-template-textarea']",
+      );
+      if (empty) empty._previewType = "page";
     });
   </script>
 
