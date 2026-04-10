@@ -5,6 +5,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from litestar import Litestar, Request, Response
 from litestar.contrib.jinja import JinjaTemplateEngine
+from litestar.di import Provide
 from litestar.exceptions import NotAuthorizedException
 from litestar.middleware.session.client_side import CookieBackendConfig
 from litestar.plugins.htmx import HTMXPlugin
@@ -13,7 +14,7 @@ from litestar.static_files.config import StaticFilesConfig
 from litestar.template.config import TemplateConfig
 
 from db.connection import db_lifespan
-from cms.catalog import init_catalog
+from cms.catalog import init_catalog, provide_catalog
 from routes.admin import admin_router
 from routes.api import api_router
 from routes.media import media_router
@@ -62,6 +63,7 @@ _static_configs = [
 app = Litestar(
     route_handlers=[media_router, favicon, pages_router, api_router, admin_router],
     lifespan=[db_lifespan],
+    dependencies={"catalog": Provide(provide_catalog, sync_to_thread=False)},
     template_config=TemplateConfig(
         directory=Path("templates"),
         engine=JinjaTemplateEngine,

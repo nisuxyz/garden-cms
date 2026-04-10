@@ -12,7 +12,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from cms.renderer import render_card, render_template_string, render_theme
+from cms.renderer import render_card, render_template_string, render_template_string_async, render_theme
 from db.tables import (
     Collection,
     CollectionItem,
@@ -90,7 +90,9 @@ async def render_page(page: dict[str, Any]) -> str:
     # 1. Render the page body as a Jinja template string.
     #    JinjaX components like <CollectionFeed slug="blog" /> and
     #    globals like {{ site.hero_headline }} are resolved here.
-    content_html = render_template_string(page["body"])
+    #    Uses the async version so the sync Jinja render runs in a thread,
+    #    keeping the main loop free for DB queries from components.
+    content_html = await render_template_string_async(page["body"])
 
     # 2. Wrap in theme.
     theme = None
@@ -194,7 +196,7 @@ async def render_item(
         if k not in merged:
             merged[k] = v
 
-    content_html = render_template_string(detail_tpl, {"item": merged})
+    content_html = await render_template_string_async(detail_tpl, {"item": merged})
 
     theme = await get_active_theme()
     if theme is None:

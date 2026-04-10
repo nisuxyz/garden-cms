@@ -7,6 +7,8 @@ Rendering utilities for the CMS pipeline.
 """
 from __future__ import annotations
 
+import asyncio
+import contextvars
 import json
 from pathlib import Path
 from typing import Any
@@ -46,10 +48,34 @@ def render_template_string(source: str, context: dict[str, Any] | None = None) -
 
     The env has JinjaX registered (if ``init_catalog`` was called),
     so ``<CollectionFeed slug="blog" />`` etc. work inside source.
+    ``__prefix`` is required by JinjaX's preprocessor output.
     """
     env = get_env()
     tpl = env.from_string(source)
-    return tpl.render(context or {})
+    ctx = context or {}
+    ctx.setdefault("__prefix", "")
+    return tpl.render(ctx)
+
+
+async def render_template_string_async(
+    source: str, context: dict[str, Any] | None = None,
+) -> str:
+    """Async version — offloads sync Jinja rendering to a worker thread.
+
+    This keeps the main event loop free so that sync helpers like
+    ``fetch_collection`` can schedule DB coroutines back on it via
+    ``run_coroutine_threadsafe``.
+    """
+    from cms.catalog import _main_loop  # avoid circular import at module level
+
+    loop = asyncio.get_running_loop()
+    _main_loop.set(loop)
+
+    # Copy the current context so the ContextVar is visible in the thread.
+    ctx = contextvars.copy_context()
+    return await loop.run_in_executor(
+        None, ctx.run, render_template_string, source, context,
+    )
 
 
 def render_card(card_template: str, item: dict[str, Any]) -> str:
@@ -88,6 +114,7 @@ def render_theme(
     env = get_env()
     tpl = env.from_string(base_template)
     ctx: dict[str, Any] = {
+        "__prefix": "",
         "title": title,
         "content": Markup(content_html),
         "nav_items": nav_items,

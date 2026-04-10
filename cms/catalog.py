@@ -6,12 +6,13 @@ to register the JinjaX extension, component folder, and template globals.
 """
 from __future__ import annotations
 
+import asyncio
 import json
+from contextvars import ContextVar
 from pathlib import Path
 from typing import Any
 
 from jinja2 import Environment
-from syncwrap import syncwrap
 
 import jinjax
 
@@ -20,9 +21,21 @@ from cms.site_context import _site_dict
 from cms.storage import get_backend
 from db.tables import Collection, CollectionItem
 
-_COMPONENTS_DIR = Path(__file__).resolve().parent.parent / "components"
+_COMPONENTS_DIR = Path(__file__).resolve().parent.parent / "templates"
 
 catalog: jinjax.Catalog | None = None
+
+# The main event loop reference, set before offloading sync rendering
+# to a worker thread so that sync helpers can schedule coroutines on it.
+_main_loop: ContextVar[asyncio.AbstractEventLoop | None] = ContextVar(
+    "_main_loop", default=None,
+)
+
+
+def provide_catalog() -> jinjax.Catalog:
+    """Litestar DI provider — returns the initialised JinjaX catalog."""
+    assert catalog is not None, "init_catalog() must be called before providing catalog"
+    return catalog
 
 
 # ── Jinja globals ──────────────────────────────────────────
@@ -80,7 +93,21 @@ async def _fetch_collection_async(
 
 
 # Sync wrapper so Jinja templates can call it during rendering.
-fetch_collection = syncwrap(_fetch_collection_async)
+# Template rendering runs in a worker thread (via run_in_executor).
+# We schedule the async DB query back on the main event loop with
+# run_coroutine_threadsafe, which is safe because the main loop is
+# free (it's awaiting the executor future, not blocked).
+def fetch_collection(
+    slug: str, page: int = 1, limit: int | None = None,
+) -> dict[str, Any]:
+    loop = _main_loop.get()
+    coro = _fetch_collection_async(slug, page, limit)
+    if loop is not None and loop.is_running():
+        # Called from a worker thread — schedule on the main loop.
+        future = asyncio.run_coroutine_threadsafe(coro, loop)
+        return future.result(timeout=30)
+    # No main loop stored (e.g. tests) — run directly.
+    return asyncio.run(coro)
 
 
 # ── Catalog init ───────────────────────────────────────────
@@ -97,19 +124,28 @@ def init_catalog(jinja_env: Environment) -> jinjax.Catalog:
     )
     catalog.add_folder(_COMPONENTS_DIR)
 
-    # Share this env with the renderer module so DB-stored templates
-    # rendered via from_string() also have JinjaX + globals.
-    set_env(jinja_env)
+    # The catalog creates its own internal env with JinjaX preprocessing.
+    # Use that env for all DB-stored template rendering so <Component /> tags work.
+    cat_env = catalog.jinja_env
+
+    # The catalog env needs the filesystem loader so {% extends "layout/..." %} works.
+    if jinja_env.loader and not cat_env.loader:
+        cat_env.loader = jinja_env.loader
+
+    # Share the catalog's env with the renderer module.
+    set_env(cat_env)
 
     def _render_card(template_str: str, item: dict[str, Any]) -> str:
         """Render a card template string with item context."""
-        tpl = jinja_env.from_string(template_str)
-        return tpl.render(item=item, site=_site_dict, media_url=_media_url)
+        tpl = cat_env.from_string(template_str)
+        return tpl.render(item=item, site=_site_dict, media_url=_media_url, __prefix="")
 
-    # Register globals available in all templates (file-based and DB strings).
-    jinja_env.globals["site"] = _site_dict
-    jinja_env.globals["media_url"] = _media_url
-    jinja_env.globals["fetch_collection"] = fetch_collection
-    jinja_env.globals["_render_card"] = _render_card
+    # Register globals on the catalog's env (used by from_string rendering)
+    # and on the original Litestar env (used by file-based template rendering).
+    for env in (cat_env, jinja_env):
+        env.globals["site"] = _site_dict
+        env.globals["media_url"] = _media_url
+        env.globals["fetch_collection"] = fetch_collection
+        env.globals["_render_card"] = _render_card
 
     return catalog
