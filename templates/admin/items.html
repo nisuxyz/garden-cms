@@ -24,40 +24,20 @@ Items{% endblock %} {% block admin_content %}
     {% for item in items %}
     <tr id="item-row-{{ item.id }}">
       <td>
-        <form
-          method="post"
-          action="/admin/collections/{{ collection.id }}/items/{{ item.id }}/reorder"
+        <button
+          hx-post="/admin/collections/{{ collection.id }}/items/{{ item.id }}/reorder"
+          hx-vals='{"direction": "up"}'
+          {% if loop.first %}disabled{% endif %}
         >
-          <input type="hidden" name="direction" value="up" />
-          <button
-            type="submit"
-            {%
-            if
-            loop.first
-            %}disabled{%
-            endif
-            %}
-          >
-            &uarr;
-          </button>
-        </form>
-        <form
-          method="post"
-          action="/admin/collections/{{ collection.id }}/items/{{ item.id }}/reorder"
+          &uarr;
+        </button>
+        <button
+          hx-post="/admin/collections/{{ collection.id }}/items/{{ item.id }}/reorder"
+          hx-vals='{"direction": "down"}'
+          {% if loop.last %}disabled{% endif %}
         >
-          <input type="hidden" name="direction" value="down" />
-          <button
-            type="submit"
-            {%
-            if
-            loop.last
-            %}disabled{%
-            endif
-            %}
-          >
-            &darr;
-          </button>
-        </form>
+          &darr;
+        </button>
       </td>
       <td>
         <a

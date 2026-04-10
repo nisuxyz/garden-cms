@@ -19,6 +19,7 @@ from db.tables import (
     CollectionItem,
     CollectionItemSlugHistory,
     Page,
+    SiteSettings,
     Theme,
 )
 
@@ -71,6 +72,17 @@ async def resolve_homepage() -> dict[str, Any] | None:
     )
 
 
+async def _get_site_head() -> str | None:
+    """Load the site_head setting (extra HTML for <head>)."""
+    row = await (
+        SiteSettings.select(SiteSettings.value)
+        .where(SiteSettings.key == "site_head")
+        .first()
+    )
+    val = (row.get("value", "") or "") if row else ""
+    return val or None
+
+
 async def render_page(page: dict[str, Any]) -> str:
     """Full pipeline: expressions → markdown → expand collections → theme.
 
@@ -103,6 +115,7 @@ async def render_page(page: dict[str, Any]) -> str:
         return content_html
 
     nav = await get_nav_items()
+    site_head = await _get_site_head()
 
     return render_theme(
         base_template=theme["base_template"],
@@ -110,6 +123,7 @@ async def render_page(page: dict[str, Any]) -> str:
         title=page["title"],
         content_html=content_html,
         nav_items=nav,
+        site_head=site_head,
     )
 
 
@@ -195,12 +209,14 @@ async def render_item(
         return content_html
 
     nav = await get_nav_items()
+    site_head = await _get_site_head()
     return render_theme(
         base_template=theme["base_template"],
         css=theme.get("css", ""),
         title=item.get("title", ""),
         content_html=content_html,
         nav_items=nav,
+        site_head=site_head,
     )
 
 

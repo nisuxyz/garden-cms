@@ -102,6 +102,7 @@ def render_theme(
     title: str,
     content_html: str,
     nav_items: list[dict[str, str]],
+    site_head: str | None = None,
 ) -> str:
     """Render a themed page.
 
@@ -112,12 +113,15 @@ def render_theme(
     """
     extra_head = Markup(f"<style>{css}</style>") if css else ""
     tpl = _file_env.from_string(base_template)
-    return tpl.render(
-        title=title,
-        content=Markup(content_html),
-        nav_items=nav_items,
-        extra_head=extra_head,
-    )
+    ctx: dict[str, Any] = {
+        "title": title,
+        "content": Markup(content_html),
+        "nav_items": nav_items,
+        "extra_head": extra_head,
+    }
+    if site_head:
+        ctx["extra_admin_head"] = Markup(site_head)
+    return tpl.render(ctx)
 
 
 # ── Expand collection placeholders ─────────────────────────

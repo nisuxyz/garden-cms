@@ -16,18 +16,18 @@
       })();
     </script>
     <title>
-      {% block title %}{{ title | default("bussin", true) }}{% endblock %}
+      {% block title %}{{ title | default("garden cms", true) }}{% endblock %}
     </title>
-    <link
+    {# <link
       rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.classless.min.css"
-    />
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.colors.min.css"
-    />
+      href="{{ css_framework_url | default('https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.classless.min.css') }}"
+    /> #}
     <link rel="icon" href="/favicon.ico" />
     <script src="https://cdn.jsdelivr.net/npm/htmx.org@next" defer></script>
+    {% block admin_head %}{{ extra_admin_head | default("<link
+      rel=\"stylesheet\"
+      href=\"https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.classless.min.css\"
+    />", true) | safe }}{% endblock %}
     {% block head %}{{ extra_head | default("", true) }}{% endblock %}
   </head>
   <body>

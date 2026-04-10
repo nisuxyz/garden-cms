@@ -11,10 +11,11 @@ from litestar.enums import RequestEncodingType
 from litestar.exceptions import NotFoundException
 from litestar.middleware.rate_limit import RateLimitConfig
 from litestar.params import Body
-from litestar.plugins.htmx import HTMXRequest
+from litestar.plugins.htmx import ClientRedirect, HTMXRequest
 from litestar.response import Redirect, Response, Template
 
 from db.tables import Collection, CollectionItem, CollectionItemSlugHistory, ContentBlock, MediaFile, Page, SiteSettings, Theme
+from cms.css_frameworks import CSS_FRAMEWORKS
 from cms.media import MediaError, delete_media, save_upload
 from cms.storage import get_backend, load_backend
 from middleware.auth import admin_guard
@@ -84,8 +85,10 @@ async def login_submit(
 
 
 @post("/logout")
-async def logout(request: HTMXRequest) -> Redirect:
+async def logout(request: HTMXRequest) -> Redirect | ClientRedirect:
     request.clear_session()
+    if request.htmx:
+        return ClientRedirect(redirect_to="/admin/login")
     return Redirect(path="/admin/login")
 
 # ── OAuth ──────────────────────────────────────────────────
@@ -253,10 +256,13 @@ async def pages_delete(page_id: int, request: HTMXRequest) -> Response | Redirec
 @post("/pages/{page_id:int}/reorder")
 async def pages_reorder(
     page_id: int,
+    request: HTMXRequest,
     data: Annotated[dict, Body(media_type=RequestEncodingType.URL_ENCODED)],
-) -> Redirect:
+) -> Redirect | ClientRedirect:
     direction = (data.get("direction") or "").strip()
     if direction not in ("up", "down"):
+        if request.htmx:
+            return ClientRedirect(redirect_to="/admin/pages")
         return Redirect(path="/admin/pages")
 
     rows = await (
@@ -265,15 +271,21 @@ async def pages_reorder(
     )
     idx = next((i for i, r in enumerate(rows) if r["id"] == page_id), None)
     if idx is None:
+        if request.htmx:
+            return ClientRedirect(redirect_to="/admin/pages")
         return Redirect(path="/admin/pages")
 
     swap_idx = idx - 1 if direction == "up" else idx + 1
     if swap_idx < 0 or swap_idx >= len(rows):
+        if request.htmx:
+            return ClientRedirect(redirect_to="/admin/pages")
         return Redirect(path="/admin/pages")
 
     a, b = rows[idx], rows[swap_idx]
     await Page.update({Page.nav_order: b["nav_order"]}).where(Page.id == a["id"])
     await Page.update({Page.nav_order: a["nav_order"]}).where(Page.id == b["id"])
+    if request.htmx:
+        return ClientRedirect(redirect_to="/admin/pages")
     return Redirect(path="/admin/pages")
 
 
@@ -609,11 +621,15 @@ async def items_update(
 async def items_reorder(
     col_id: int,
     item_id: int,
+    request: HTMXRequest,
     data: Annotated[dict, Body(media_type=RequestEncodingType.URL_ENCODED)],
-) -> Redirect:
+) -> Redirect | ClientRedirect:
+    path = f"/admin/collections/{col_id}/items"
     direction = (data.get("direction") or "").strip()
     if direction not in ("up", "down"):
-        return Redirect(path=f"/admin/collections/{col_id}/items")
+        if request.htmx:
+            return ClientRedirect(redirect_to=path)
+        return Redirect(path=path)
 
     rows = await (
         CollectionItem.select(CollectionItem.id, CollectionItem.sort_order)
@@ -622,16 +638,22 @@ async def items_reorder(
     )
     idx = next((i for i, r in enumerate(rows) if r["id"] == item_id), None)
     if idx is None:
-        return Redirect(path=f"/admin/collections/{col_id}/items")
+        if request.htmx:
+            return ClientRedirect(redirect_to=path)
+        return Redirect(path=path)
 
     swap_idx = idx - 1 if direction == "up" else idx + 1
     if swap_idx < 0 or swap_idx >= len(rows):
-        return Redirect(path=f"/admin/collections/{col_id}/items")
+        if request.htmx:
+            return ClientRedirect(redirect_to=path)
+        return Redirect(path=path)
 
     a, b = rows[idx], rows[swap_idx]
     await CollectionItem.update({CollectionItem.sort_order: b["sort_order"]}).where(CollectionItem.id == a["id"])
     await CollectionItem.update({CollectionItem.sort_order: a["sort_order"]}).where(CollectionItem.id == b["id"])
-    return Redirect(path=f"/admin/collections/{col_id}/items")
+    if request.htmx:
+        return ClientRedirect(redirect_to=path)
+    return Redirect(path=path)
 
 
 @post("/collections/{col_id:int}/items/{item_id:int}/delete")
@@ -659,6 +681,7 @@ _SETTINGS_KEYS = [
     "s3_prefix",
     "s3_public_url",
     "favicon",
+    "site_head",
 ]
 
 
@@ -676,7 +699,7 @@ async def settings_page() -> Template:
     )
     return Template(
         template_name="admin/settings.html",
-        context={"settings": settings, "saved": False, "error": None, "media_files": media_files},
+        context={"settings": settings, "saved": False, "error": None, "media_files": media_files, "css_frameworks": CSS_FRAMEWORKS},
     )
 
 
@@ -711,7 +734,7 @@ async def settings_save(
 
     return Template(
         template_name="admin/settings.html",
-        context={"settings": settings, "saved": error is None, "error": error, "media_files": await (
+        context={"settings": settings, "saved": error is None, "error": error, "css_frameworks": CSS_FRAMEWORKS, "media_files": await (
             MediaFile.select(MediaFile.filename, MediaFile.original_name)
             .order_by(MediaFile.original_name)
         )},
@@ -845,9 +868,11 @@ async def themes_update(
 
 
 @post("/themes/{theme_id:int}/activate")
-async def themes_activate(theme_id: int) -> Redirect:
+async def themes_activate(theme_id: int, request: HTMXRequest) -> Redirect | ClientRedirect:
     await Theme.update({Theme.active: False}).where(Theme.active.eq(True))
     await Theme.update({Theme.active: True}).where(Theme.id == theme_id)
+    if request.htmx:
+        return ClientRedirect(redirect_to="/admin/themes")
     return Redirect(path="/admin/themes")
 
 
@@ -870,6 +895,12 @@ async def themes_delete(theme_id: int, request: HTMXRequest) -> Response | Redir
 
 
 # ── Guarded and unguarded handlers ─────────────────────────
+
+
+async def _no_cache(response: Response) -> Response:
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
 
 _password_login_router = Router(
     path="/",
@@ -896,4 +927,5 @@ _guarded_router = Router(
 )
 admin_router = Router(
     path="/admin", route_handlers=[*_public_handlers, _guarded_router],
+    after_request=_no_cache,
 )

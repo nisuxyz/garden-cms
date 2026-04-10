@@ -24,9 +24,7 @@ admin_content %}
       <td>
         {% if theme.active %}<ins>active</ins>
         {% else %}
-        <form method="post" action="/admin/themes/{{ theme.id }}/activate">
-          <button type="submit">Activate</button>
-        </form>
+        <button hx-post="/admin/themes/{{ theme.id }}/activate">Activate</button>
         {% endif %}
       </td>
       <td>

@@ -134,6 +134,23 @@ block admin_content %}
     >
   </label>
 
+  <label>
+    Site Head
+    <select id="css-preset" onchange="
+      if (this.value) {
+        document.querySelector('[name=site_head]').value = this.value;
+        this.selectedIndex = 0;
+      }
+    ">
+      <option value="">Insert a classless CSS framework…</option>
+      {% for key, name, head_html in css_frameworks %}
+      <option value="{{ head_html }}">{{ name }}</option>
+      {% endfor %}
+    </select>
+    <textarea name="site_head" rows="6">{{ settings.site_head }}</textarea>
+    <small>HTML injected into <code>&lt;head&gt;</code> on the public site (e.g. stylesheet links, meta tags). Admin always uses Pico.</small>
+  </label>
+
   <button type="submit">Save Settings</button>
 </form>
 {% endblock %}

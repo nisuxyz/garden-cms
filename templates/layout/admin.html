@@ -1,5 +1,9 @@
 {% extends "layout/base.html" %} {% block title %}Admin{% endblock %} {% block
 head %}
+<link
+  rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.colors.min.css"
+/>
 <style>
   /* Two-column admin layout */
   main {
@@ -38,9 +42,6 @@ head %}
   table button {
     padding: 0.25rem 0.5rem !important;
     font-size: 0.8rem !important;
-  }
-  table form {
-    margin: 0;
   }
 
   /* Save + Delete footer row */
@@ -99,9 +100,7 @@ head %}
         <li><a href="/admin/themes">themes</a></li>
         <li><a href="/admin/settings">settings</a></li>
         <li>
-          <form method="post" action="/admin/logout">
-            <button type="submit">log out</button>
-          </form>
+          <button hx-post="/admin/logout">log out</button>
         </li>
       </ul>
     </nav>
