@@ -11,30 +11,30 @@ admin_content %}
   action="{% if item %}/admin/collections/{{ collection.id }}/items/{{ item.id }}/edit{% else %}/admin/collections/{{ collection.id }}/items{% endif %}"
 >
   <label>
-      Title
-      <input
-        type="text"
-        name="title"
-        value="{{ item.title if item else '' }}"
-        required
-      />
-    </label>
-    <label>
-      Slug
-      <input
-        type="text"
-        name="slug"
-        value="{{ item.slug if item else '' }}"
-        required
-        pattern="[a-z0-9\-]+"
-        title="Lowercase letters, numbers, and hyphens only"
-      />
-    </label>
+    Title
+    <input
+      type="text"
+      name="title"
+      value="{{ item.title if item else '' }}"
+      required
+    />
+  </label>
+  <label>
+    Slug
+    <input
+      type="text"
+      name="slug"
+      value="{{ item.slug if item else '' }}"
+      required
+      pattern="[a-z0-9\-]+"
+      title="Lowercase letters, numbers, and hyphens only"
+    />
+  </label>
 
   <!-- Dynamic fields from collection schema -->
   {% for field in collection.fields_schema %}
   <label>
-    {{ field.name | replace("_", " ") | title }} {% if field.type == "markdown"
+    {{ field.name | replace("_", " ") | title }} {% if field.type == "html"
     %}
     <textarea
       name="field_{{ field.name }}"
@@ -47,8 +47,14 @@ admin_content %}
       %}required{%
       endif
       %}
-    >{{ item.data[field.name] if item and item.data and field.name in item.data else '' }}</textarea>
-    <div data-editor data-target="field-{{ field.name }}-textarea" data-lang="django"></div>
+    >
+{{ item.data[field.name] if item and item.data and field.name in item.data else '' }}</textarea
+    >
+    <div
+      data-editor
+      data-target="field-{{ field.name }}-textarea"
+      data-lang="django"
+    ></div>
     <small>Jinja template syntax supported.</small>
     {% elif field.type == "boolean" %}
     <input
@@ -136,47 +142,47 @@ admin_content %}
   {% endfor %}
 
   <label>
-      Sort Order
+    Sort Order
+    <input
+      type="number"
+      name="sort_order"
+      value="{{ item.sort_order if item else 0 }}"
+    />
+  </label>
+  <fieldset>
+    <label>
       <input
-        type="number"
-        name="sort_order"
-        value="{{ item.sort_order if item else 0 }}"
+        type="checkbox"
+        name="featured"
+        {%
+        if
+        item
+        and
+        item.featured
+        %}checked{%
+        endif
+        %}
       />
+      Featured
     </label>
-    <fieldset>
-      <label>
-        <input
-          type="checkbox"
-          name="featured"
-          {%
-          if
-          item
-          and
-          item.featured
-          %}checked{%
-          endif
-          %}
-        />
-        Featured
-      </label>
-    </fieldset>
-    <fieldset>
-      <label>
-        <input
-          type="checkbox"
-          name="published"
-          {%
-          if
-          item
-          and
-          item.published
-          %}checked{%
-          endif
-          %}
-        />
-        Published
-      </label>
-    </fieldset>
+  </fieldset>
+  <fieldset>
+    <label>
+      <input
+        type="checkbox"
+        name="published"
+        {%
+        if
+        item
+        and
+        item.published
+        %}checked{%
+        endif
+        %}
+      />
+      Published
+    </label>
+  </fieldset>
 
   <button type="submit">
     {% if item %}Save Changes{% else %}Create Item{% endif %}

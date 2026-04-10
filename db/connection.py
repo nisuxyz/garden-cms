@@ -130,12 +130,12 @@ body>footer { margin-top: auto; text-align: center; }
 _DEFAULT_CONTENT_BLOCKS = [
     ("hero_headline", "Hero Headline", "text", "Hello, I'm here."),
     ("hero_subtext", "Hero Subtext", "text", "Developer, maker, and curious human."),
-    ("about", "About (Home)", "markdown", "I build things, explore ideas, and occasionally write about what I learn along the way."),
-    ("resume.intro", "Resume Intro", "markdown", "Here's a snapshot of my professional journey so far."),
-    ("resume.experience", "Resume Experience", "markdown", "## Experience\n\n*Add your experience here.*"),
-    ("resume.education", "Resume Education", "markdown", "## Education\n\n*Add your education here.*"),
-    ("resume.skills", "Resume Skills", "markdown", "## Skills\n\n*Add your skills here.*"),
-    ("contact.intro", "Contact Intro", "markdown", "Have a question or want to say hello? Fill out the form below."),
+    ("about", "About (Home)", "html", "I build things, explore ideas, and occasionally write about what I learn along the way."),
+    ("resume.intro", "Resume Intro", "html", "Here's a snapshot of my professional journey so far."),
+    ("resume.experience", "Resume Experience", "html", "<h2>Experience</h2>\n\n<p><em>Add your experience here.</em></p>"),
+    ("resume.education", "Resume Education", "html", "<h2>Education</h2>\n\n<p><em>Add your education here.</em></p>"),
+    ("resume.skills", "Resume Skills", "html", "<h2>Skills</h2>\n\n<p><em>Add your skills here.</em></p>"),
+    ("contact.intro", "Contact Intro", "html", "Have a question or want to say hello? Fill out the form below."),
 ]
 
 _BLOG_CARD_TEMPLATE = """\
@@ -284,7 +284,7 @@ async def init_db() -> None:
             description="Blog posts and articles",
             fields_schema=[
                 {"name": "summary", "type": "text", "required": True},
-                {"name": "body", "type": "markdown", "required": True},
+                {"name": "body", "type": "html", "required": True},
                 {"name": "tags", "type": "list", "required": False},
             ],
             card_template=_BLOG_CARD_TEMPLATE,
@@ -298,7 +298,7 @@ async def init_db() -> None:
             description="Portfolio projects",
             fields_schema=[
                 {"name": "summary", "type": "text", "required": True},
-                {"name": "body", "type": "markdown", "required": True},
+                {"name": "body", "type": "html", "required": True},
                 {"name": "tags", "type": "list", "required": False},
                 {"name": "url", "type": "url", "required": False},
                 {"name": "repo_url", "type": "url", "required": False},

@@ -4,17 +4,23 @@ In-memory cache for ContentBlock key/value pairs.
 All ContentBlocks are loaded at startup and kept in a module-level dict.
 CRUD operations call ``invalidate_site_dict()`` to refresh the cache.
 The cache is intentionally simple — ContentBlocks are small KV pairs.
+
+HTML blocks are rendered through Jinja so ``{{ media_url("file") }}``
+and other globals resolve at cache-load time.
 """
 from __future__ import annotations
 
 from cms.storage import get_backend
 from db.tables import ContentBlock
+from markupsafe import Markup
 
 _site_dict: dict[str, str] = {}
 
 
 async def load_site_dict() -> None:
     """Query all ContentBlocks and populate ``_site_dict``."""
+    from cms.renderer import render_template_string
+
     rows = await ContentBlock.select()
     new: dict[str, str] = {}
     backend = get_backend()
@@ -24,8 +30,14 @@ async def load_site_dict() -> None:
         value = row.get("value", "")
         if block_type == "image" and value:
             new[key] = backend.url(value)
+        elif block_type == "html" and value:
+            # Render through Jinja so media_url() etc. resolve.
+            # Wrap in Markup so {{ site.key }} won't be auto-escaped.
+            try:
+                new[key] = Markup(render_template_string(value))
+            except Exception:
+                new[key] = Markup(value)
         else:
-            # text and markdown blocks stored as-is (no markdown rendering)
             new[key] = value
     # Mutate in-place so Jinja globals keep a live reference.
     _site_dict.clear()

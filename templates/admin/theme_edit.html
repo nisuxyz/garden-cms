@@ -7,25 +7,25 @@ else %}New Theme{% endif %}{% endblock %} {% block admin_content %}
   action="{% if theme %}/admin/themes/{{ theme.id }}/edit{% else %}/admin/themes{% endif %}"
 >
   <label>
-      Name
-      <input
-        type="text"
-        name="name"
-        value="{{ theme.name if theme else '' }}"
-        required
-      />
-    </label>
-    <label>
-      Slug
-      <input
-        type="text"
-        name="slug"
-        value="{{ theme.slug if theme else '' }}"
-        required
-        pattern="[a-z0-9\-]+"
-        title="Lowercase letters, numbers, and hyphens only"
-      />
-    </label>
+    Name
+    <input
+      type="text"
+      name="name"
+      value="{{ theme.name if theme else '' }}"
+      required
+    />
+  </label>
+  <label>
+    Slug
+    <input
+      type="text"
+      name="slug"
+      value="{{ theme.slug if theme else '' }}"
+      required
+      pattern="[a-z0-9\-]+"
+      title="Lowercase letters, numbers, and hyphens only"
+    />
+  </label>
 
   <fieldset>
     <label>
@@ -47,7 +47,8 @@ else %}New Theme{% endif %}{% endblock %} {% block admin_content %}
 
   <label>
     Base Template (Jinja2 — extends layout/base.html)
-    <textarea name="base_template" id="base-template-textarea" rows="25" hidden>{% if theme %}{{ theme.base_template }}{% else %}{{ "{% extends \"layout/base.html\" %}" }}
+    <textarea name="base_template" id="base-template-textarea" rows="25" hidden>
+{% if theme %}{{ theme.base_template }}{% else %}{{ "{% extends \"layout/base.html\" %}" }}
 {{ "{% block head %}" }}{{ "{{ extra_head }}" }}{{ "{% endblock %}" }}
 {{ "{% block body %}" }}
 <header>
@@ -63,8 +64,14 @@ else %}New Theme{% endif %}{% endblock %} {% block admin_content %}
 <footer>
   <small>Powered by Bussin CMS</small>
 </footer>
-{{ "{% endblock %}" }}{% endif %}</textarea>
-    <div data-editor data-target="base-template-textarea" data-lang="django" data-preview="theme-preview"></div>
+{{ "{% endblock %}" }}{% endif %}</textarea
+    >
+    <div
+      data-editor
+      data-target="base-template-textarea"
+      data-lang="django"
+      data-preview="theme-preview"
+    ></div>
   </label>
   <small>
     Extends <code>layout/base.html</code> (provides &lt;head&gt;, Pico CSS,
@@ -77,13 +84,22 @@ else %}New Theme{% endif %}{% endblock %} {% block admin_content %}
 
   <label>
     CSS
-    <textarea name="css" id="css-textarea" rows="15" hidden>{{ theme.css if theme else '' }}</textarea>
-    <div data-editor data-target="css-textarea" data-lang="css" data-preview="theme-preview"></div>
+    <textarea name="css" id="css-textarea" rows="15" hidden>
+{{ theme.css if theme else '' }}</textarea
+    >
+    <div
+      data-editor
+      data-target="css-textarea"
+      data-lang="css"
+      data-preview="theme-preview"
+    ></div>
   </label>
   <iframe id="theme-preview" class="preview" title="Theme preview"></iframe>
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      var tmpl = document.querySelector("[data-target='base-template-textarea']");
+      var tmpl = document.querySelector(
+        "[data-target='base-template-textarea']",
+      );
       if (tmpl) tmpl._previewType = "theme";
       var css = document.querySelector("[data-target='css-textarea']");
       if (css) css._previewType = "css";

@@ -300,7 +300,11 @@ async def content_list() -> Template:
         .order_by(ContentBlock.key)
         
     )
-    return Template(template_name="admin/content.html", context={"blocks": rows})
+    media_files = await (
+        MediaFile.select(MediaFile.filename, MediaFile.original_name)
+        .order_by(MediaFile.original_name)
+    )
+    return Template(template_name="admin/content.html", context={"blocks": rows, "media_files": media_files})
 
 
 @post("/content")

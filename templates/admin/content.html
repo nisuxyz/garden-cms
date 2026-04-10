@@ -10,28 +10,28 @@
   <summary>Add new block</summary>
   <form method="post" action="/admin/content">
     <label>
-        Key
-        <input
-          type="text"
-          name="key"
-          required
-          placeholder="e.g. hero_headline"
-          pattern="[a-z0-9_\.]+"
-          title="Lowercase, numbers, underscores, dots"
-        />
-      </label>
-      <label>
-        Label
-        <input type="text" name="label" required placeholder="Hero Headline" />
-      </label>
-      <label>
-        Type
-        <select name="block_type">
-          <option value="text">Text</option>
-          <option value="markdown">Markdown</option>
-          <option value="image">Image (filename)</option>
-        </select>
-      </label>
+      Key
+      <input
+        type="text"
+        name="key"
+        required
+        placeholder="e.g. hero_headline"
+        pattern="[a-z0-9_\.]+"
+        title="Lowercase, numbers, underscores, dots"
+      />
+    </label>
+    <label>
+      Label
+      <input type="text" name="label" required placeholder="Hero Headline" />
+    </label>
+    <label>
+      Type
+      <select name="block_type">
+        <option value="text">Text</option>
+        <option value="html">HTML / Jinja</option>
+        <option value="image">Image (filename)</option>
+      </select>
+    </label>
     <label>
       Value
       <textarea name="value" rows="3"></textarea>
@@ -44,9 +44,7 @@
 <article id="block-{{ block.id }}">
   <header>
     <strong>{{ block.label }}</strong>
-    <small
-      >{{ block.block_type }} &middot; <code>{{ block.key }}</code></small
-    >
+    <small>{{ block.block_type }} &middot; <code>{{ block.key }}</code></small>
   </header>
   <form
     method="post"
@@ -56,24 +54,81 @@
     hx-swap="outerHTML"
     hx-indicator="#save-btn-{{ block.id }}"
   >
-    {% if block.block_type == "markdown" %}
-    <textarea name="value" rows="5">{{ block.value }}</textarea>
-    <small>Markdown supported.</small>
+    {% if block.block_type == "html" %}
+    <textarea id="value-{{ block.id }}" name="value" rows="5" hidden>
+{{ block.value }}</textarea
+    >
+    <div
+      data-editor
+      data-target="value-{{ block.id }}"
+      data-lang="django"
+      data-preview="preview-{{ block.id }}"
+    >
+      {{ block.value }}
+    </div>
+    <small
+      >Jinja template syntax supported. Use
+      <code>{{ '{{ media_url("file.jpg") }}' }}</code> to insert media.</small
+    >
+    {% if media_files %}
+    <details>
+      <summary>Insert media</summary>
+      <div
+        style="display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 0.5rem 0"
+      >
+        {% for mf in media_files %}
+        <button
+          type="button"
+          class="outline secondary"
+          style="font-size: 0.8rem; padding: 0.25rem 0.5rem"
+          onclick="(function(el){
+            var editor = document.querySelector('[data-target=&quot;value-{{ block.id }}&quot;]');
+            if(editor && editor._jar){
+              var pos = editor.textContent.length;
+              var snippet = '<img src={{ '"{{' }} media_url(&quot;{{ mf.filename }}&quot;) {{ '}}"' }}>';
+              editor._jar.updateCode(editor.textContent + snippet);
+            }
+          })(this)"
+        >
+          {{ mf.original_name }}
+        </button>
+        {% endfor %}
+      </div>
+    </details>
+    {% endif %}
+    <iframe id="preview-{{ block.id }}" class="preview"></iframe>
+    <script>
+      (() => {
+        const el = document.querySelector(
+          '[data-target="value-{{ block.id }}"]',
+        );
+        if (el) el._previewType = "page";
+      })();
+    </script>
     {% elif block.block_type == "image" %}
     <input
       type="text"
       name="value"
+      id="image-value-{{ block.id }}"
       value="{{ block.value }}"
       placeholder="filename from media library"
     />
+    {% if media_files %}
+    <select
+      onchange="if(this.value){document.getElementById('image-value-{{ block.id }}').value=this.value;this.selectedIndex=0}"
+    >
+      <option value="">Choose from media library…</option>
+      {% for mf in media_files %}
+      <option value="{{ mf.filename }}">{{ mf.original_name }}</option>
+      {% endfor %}
+    </select>
+    {% endif %}
     <small>Enter the filename of an uploaded media file.</small>
     {% else %}
     <input type="text" name="value" value="{{ block.value }}" />
     {% endif %}
     <footer>
-      <button type="submit" id="save-btn-{{ block.id }}">
-        Save
-      </button>
+      <button type="submit" id="save-btn-{{ block.id }}">Save</button>
       <button
         hx-post="/admin/content/{{ block.id }}/delete"
         hx-target="#block-{{ block.id }}"

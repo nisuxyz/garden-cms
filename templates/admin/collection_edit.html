@@ -8,34 +8,34 @@ admin_content %}
   action="{% if collection %}/admin/collections/{{ collection.id }}/edit{% else %}/admin/collections{% endif %}"
 >
   <label>
-      Name
-      <input
-        type="text"
-        name="name"
-        value="{{ collection.name if collection else '' }}"
-        required
-      />
-    </label>
-    <label>
-      Slug (URL prefix)
-      <input
-        type="text"
-        name="slug"
-        value="{{ collection.slug if collection else '' }}"
-        required
-        pattern="[a-z0-9\-]+"
-        title="Lowercase letters, numbers, and hyphens only"
-      />
-    </label>
-    <label>
-      Items per page
-      <input
-        type="number"
-        name="items_per_page"
-        value="{{ collection.items_per_page if collection else 10 }}"
-        min="1"
-      />
-    </label>
+    Name
+    <input
+      type="text"
+      name="name"
+      value="{{ collection.name if collection else '' }}"
+      required
+    />
+  </label>
+  <label>
+    Slug (URL prefix)
+    <input
+      type="text"
+      name="slug"
+      value="{{ collection.slug if collection else '' }}"
+      required
+      pattern="[a-z0-9\-]+"
+      title="Lowercase letters, numbers, and hyphens only"
+    />
+  </label>
+  <label>
+    Items per page
+    <input
+      type="number"
+      name="items_per_page"
+      value="{{ collection.items_per_page if collection else 10 }}"
+      min="1"
+    />
+  </label>
 
   <label>
     Description
@@ -48,25 +48,38 @@ admin_content %}
 
   <label>
     Fields Schema (JSON)
-    <textarea name="fields_schema" id="fields-schema-textarea" rows="8" hidden>{% if collection %}{{ collection.fields_schema | tojson(indent=2) }}{% else %}[
+    <textarea name="fields_schema" id="fields-schema-textarea" rows="8" hidden>
+{% if collection %}{{ collection.fields_schema | tojson(indent=2) }}{% else %}[
   {"name": "summary", "type": "text", "required": true},
-  {"name": "body", "type": "markdown", "required": true},
+  {"name": "body", "type": "html", "required": true},
   {"name": "tags", "type": "list", "required": false}
-]{% endif %}</textarea>
-    <div data-editor data-target="fields-schema-textarea" data-lang="json"></div>
+]{% endif %}</textarea
+    >
+    <div
+      data-editor
+      data-target="fields-schema-textarea"
+      data-lang="json"
+    ></div>
   </label>
   <small>
     Array of objects:
     <code
       >{"name": "field_name", "type":
-      "text|markdown|image|list|url|boolean|date", "required": true|false}</code
+      "text|html|image|list|url|boolean|date", "required": true|false}</code
     >
   </small>
 
   <label>
     Card Template (Jinja HTML with <code>{{ "{{ item.* }}" }}</code>)
-    <textarea name="card_template" id="card-template-textarea" rows="10" hidden>{{ collection.card_template if collection else '' }}</textarea>
-    <div data-editor data-target="card-template-textarea" data-lang="django" data-preview="card-preview"></div>
+    <textarea name="card_template" id="card-template-textarea" rows="10" hidden>
+{{ collection.card_template if collection else '' }}</textarea
+    >
+    <div
+      data-editor
+      data-target="card-template-textarea"
+      data-lang="django"
+      data-preview="card-preview"
+    ></div>
   </label>
   <small>
     Rendered for each item in collection listings. Use
@@ -77,24 +90,47 @@ admin_content %}
 
   <label>
     Detail Template (Jinja HTML with <code>{{ "{{ item.* }}" }}</code>)
-    <textarea name="detail_template" id="detail-template-textarea" rows="10" hidden>{{ collection.detail_template if collection else '' }}</textarea>
-    <div data-editor data-target="detail-template-textarea" data-lang="django"></div>
+    <textarea
+      name="detail_template"
+      id="detail-template-textarea"
+      rows="10"
+      hidden
+    >
+{{ collection.detail_template if collection else '' }}</textarea
+    >
+    <div
+      data-editor
+      data-target="detail-template-textarea"
+      data-lang="django"
+    ></div>
   </label>
   <small>
-    Rendered as the full detail page for a single item. Jinja template syntax supported.
+    Rendered as the full detail page for a single item. Jinja template syntax
+    supported.
   </small>
 
   <label>
     Empty List Template (HTML)
-    <textarea name="empty_template" id="empty-template-textarea" rows="4" hidden>{{ collection.empty_template if collection else '' }}</textarea>
-    <div data-editor data-target="empty-template-textarea" data-lang="django"></div>
+    <textarea
+      name="empty_template"
+      id="empty-template-textarea"
+      rows="4"
+      hidden
+    >
+{{ collection.empty_template if collection else '' }}</textarea
+    >
+    <div
+      data-editor
+      data-target="empty-template-textarea"
+      data-lang="django"
+    ></div>
   </label>
-  <small>
-    Shown when the collection has no published items. Plain HTML.
-  </small>
+  <small> Shown when the collection has no published items. Plain HTML. </small>
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      var card = document.querySelector("[data-target='card-template-textarea']");
+      var card = document.querySelector(
+        "[data-target='card-template-textarea']",
+      );
       if (card) card._previewType = "card";
     });
   </script>

@@ -1,23 +1,16 @@
-{#def slug, page=1, limit=None #}
-{#- Self-fetching collection feed.
-    Usage: <CollectionFeed slug="blog" />
-           <CollectionFeed slug="blog" limit=3 />
--#}
-{% set result = fetch_collection(slug, page, limit) %}
-{% set col = result.collection %}
-{% set items = result.items %}
-{% if col and items %}
-  {% set card_tpl = col.get("card_template", "") %}
-  {% for item in items %}
-    {{ _render_card(card_tpl, item) | safe }}
-  {% endfor %}
-  {% if result.has_more %}
-    <button
-      hx-get="/api/collection/{{ slug }}/feed?page={{ result.next_page }}"
-      hx-swap="outerHTML"
-      hx-target="this"
-    >Load more</button>
-  {% endif %}
-{% elif col %}
-  {{ col.get("empty_template", "") | safe }}
-{% endif %}
+{#def slug, page=1, limit=None #} {#- Self-fetching collection feed. Usage:
+<CollectionFeed slug="blog" />
+<CollectionFeed slug="blog" limit="3" />
+-#} {% set result = fetch_collection(slug, page, limit) %} {% set col =
+result.collection %} {% set items = result.items %} {% if col and items %} {%
+set card_tpl = col.get("card_template", "") %} {% for item in items %} {{
+_render_card(card_tpl, item) | safe }} {% endfor %} {% if result.has_more %}
+<button
+  hx-get="/api/collection/{{ slug }}/feed?page={{ result.next_page }}"
+  hx-swap="outerHTML"
+  hx-target="this"
+>
+  Load more
+</button>
+{% endif %} {% elif col %} {{ col.get("empty_template", "") | safe }} {% endif
+%}

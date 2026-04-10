@@ -52,11 +52,11 @@ class Page(Table, tablename="pages"):
 
 
 class ContentBlock(Table, tablename="content_blocks"):
-    """Global key/value content — text, markdown, or image reference."""
+    """Global key/value content — text, html (Jinja), or image reference."""
 
     key = Varchar(length=255, unique=True, required=True)
     label = Varchar(length=255, required=True)
-    block_type = Varchar(length=50, default="text")  # text | markdown | image
+    block_type = Varchar(length=50, default="text")  # text | html | image
     value = Text(default="")
     created_at = Timestamptz()
     updated_at = Timestamptz(auto_update=datetime.now)
