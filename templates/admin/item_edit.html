@@ -34,8 +34,7 @@ admin_content %}
   <!-- Dynamic fields from collection schema -->
   {% for field in collection.fields_schema %}
   <label>
-    {{ field.name | replace("_", " ") | title }} {% if field.type == "html"
-    %}
+    {{ field.name | replace("_", " ") | title }} {% if field.type == "html" %}
     <textarea
       name="field_{{ field.name }}"
       id="field-{{ field.name }}-textarea"

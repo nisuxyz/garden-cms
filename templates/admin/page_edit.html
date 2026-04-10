@@ -53,8 +53,6 @@
     document.addEventListener("DOMContentLoaded", function () {
       var el = document.querySelector("[data-target='body-textarea']");
       if (el) el._previewType = "page";
-      // trigger initial preview update
-      document.getElementById('page-form').dispatchEvent(new Event('submit', { cancelable: true }));
     });
   </script>
 
