@@ -21,28 +21,10 @@ block admin_content %}
           this.value === 's3' ? '' : 'none'
       "
     >
-      <option
-        value="local"
-        {%
-        if
-        settings.storage_backend
-        !="s3"
-        %}selected{%
-        endif
-        %}
-      >
+      <option value="local" {% if settings.storage_backend != 's3' %}selected{% endif %}>
         Local Disk
       </option>
-      <option
-        value="s3"
-        {%
-        if
-        settings.storage_backend=""
-        ="s3"
-        %}selected{%
-        endif
-        %}
-      >
+      <option value="s3" {% if settings.storage_backend == 's3' %}selected{% endif %}>
         S3-Compatible
       </option>
     </select>
@@ -142,16 +124,7 @@ block admin_content %}
     <select name="favicon">
       <option value="">Default (built-in)</option>
       {% for file in media_files %}
-      <option
-        value="{{ file.filename }}"
-        {%
-        if
-        settings.favicon=""
-        ="file.filename"
-        %}selected{%
-        endif
-        %}
-      >
+      <option value="{{ file.filename }}" {% if settings.favicon == file.filename %}selected{% endif %}>
         {{ file.original_name }} ({{ file.filename }})
       </option>
       {% endfor %}
