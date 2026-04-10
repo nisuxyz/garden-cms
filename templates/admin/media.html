@@ -48,7 +48,7 @@
   <article id="media-{{ file.id }}" style="padding: 0; overflow: hidden">
     {% if file.mime_type != "image/svg+xml" %}
     <img
-      src="/media/{{ file.filename }}"
+      src="{{ media_url(file.filename) }}"
       alt="{{ file.alt_text or file.original_name }}"
       style="width: 100%; height: 150px; object-fit: cover"
     />
