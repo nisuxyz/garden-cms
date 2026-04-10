@@ -15,7 +15,8 @@ from litestar.template.config import TemplateConfig
 from db.connection import db_lifespan
 from routes.admin import admin_router
 from routes.api import api_router
-from routes.pages import pages_router
+from routes.media import media_router
+from routes.pages import favicon, pages_router
 
 load_dotenv()
 
@@ -48,19 +49,23 @@ def _handle_not_authorized(request: "Request", exc: NotAuthorizedException) -> R
     return Redirect(path=redirect_to)
 
 
+# ── Static files ───────────────────────────────────────────
+
+_static_configs = [
+    StaticFilesConfig(directories=[Path("static")], path="/static"),
+]
+
+
 # ── Application ────────────────────────────────────────────
 
 app = Litestar(
-    route_handlers=[pages_router, api_router, admin_router],
+    route_handlers=[media_router, favicon, pages_router, api_router, admin_router],
     lifespan=[db_lifespan],
     template_config=TemplateConfig(
         directory=Path("templates"),
         engine=JinjaTemplateEngine,
     ),
-    static_files_config=[
-        StaticFilesConfig(directories=[Path("static")], path="/static"),
-        StaticFilesConfig(directories=[Path("data/media")], path="/media"),
-    ],
+    static_files_config=_static_configs,
     middleware=[session_config.middleware],
     plugins=[HTMXPlugin()],
     exception_handlers={NotAuthorizedException: _handle_not_authorized},

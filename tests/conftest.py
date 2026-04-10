@@ -20,6 +20,7 @@ from db.tables import (
     ContentBlock,
     MediaFile,
     Page,
+    SiteSettings,
     Theme,
 )
 
@@ -32,6 +33,7 @@ _ALL_TABLES = [
     CollectionItem,
     CollectionItemSlugHistory,
     MediaFile,
+    SiteSettings,
 ]
 
 

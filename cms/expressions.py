@@ -21,6 +21,7 @@ from typing import Any
 
 from db.schema import render_md
 from db.tables import Collection, CollectionItem, ContentBlock, MediaFile
+from cms.storage import get_backend
 
 # ── Tokeniser ──────────────────────────────────────────────
 
@@ -89,7 +90,7 @@ async def _resolve_site(key: str) -> str:
         return render_md(row["value"])
     if row["block_type"] == "image":
         alt = key.replace("_", " ").replace(".", " ")
-        return f'<img src="/media/{row["value"]}" alt="{alt}">'
+        return f'<img src="{get_backend().url(row["value"])}" alt="{alt}">'
     return row["value"]
 
 
@@ -150,7 +151,7 @@ async def _resolve_media(filename: str) -> str:
     if row is None:
         return ""
     alt = row.get("alt_text") or row["original_name"]
-    return f'<img src="/media/{row["filename"]}" alt="{alt}">'
+    return f'<img src="{get_backend().url(row["filename"])}" alt="{alt}">'
 
 
 def _resolve_item(field_name: str, ctx: ExpressionContext) -> str:

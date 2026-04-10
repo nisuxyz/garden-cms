@@ -14,8 +14,9 @@ from litestar.params import Body
 from litestar.plugins.htmx import HTMXRequest
 from litestar.response import Redirect, Response, Template
 
-from db.tables import Collection, CollectionItem, CollectionItemSlugHistory, ContentBlock, MediaFile, Page, Theme
+from db.tables import Collection, CollectionItem, CollectionItemSlugHistory, ContentBlock, MediaFile, Page, SiteSettings, Theme
 from cms.media import MediaError, delete_media, save_upload
+from cms.storage import get_backend, load_backend
 from middleware.auth import admin_guard
 from middleware.oauth import (
     check_group_membership,
@@ -618,6 +619,77 @@ async def items_delete(
     return Redirect(path=f"/admin/collections/{col_id}/items")
 
 
+# ── Settings ───────────────────────────────────────────────
+
+_SETTINGS_KEYS = [
+    "storage_backend",
+    "s3_bucket",
+    "s3_region",
+    "s3_endpoint_url",
+    "s3_access_key_id",
+    "s3_secret_access_key",
+    "s3_prefix",
+    "s3_public_url",
+    "favicon",
+]
+
+
+async def _get_settings_dict() -> dict[str, str]:
+    rows = await SiteSettings.select(SiteSettings.key, SiteSettings.value)
+    return {r["key"]: r.get("value", "") or "" for r in rows}
+
+
+@get("/settings")
+async def settings_page() -> Template:
+    settings = await _get_settings_dict()
+    media_files = await (
+        MediaFile.select(MediaFile.filename, MediaFile.original_name)
+        .order_by(MediaFile.original_name)
+    )
+    return Template(
+        template_name="admin/settings.html",
+        context={"settings": settings, "saved": False, "error": None, "media_files": media_files},
+    )
+
+
+@post("/settings")
+async def settings_save(
+    data: Annotated[dict, Body(media_type=RequestEncodingType.URL_ENCODED)],
+) -> Template:
+    settings: dict[str, str] = {}
+    for key in _SETTINGS_KEYS:
+        val = (data.get(key) or "").strip()
+        settings[key] = val
+
+        existing = await (
+            SiteSettings.select()
+            .where(SiteSettings.key == key)
+            .first()
+        )
+        if existing:
+            await (
+                SiteSettings.update({SiteSettings.value: val})
+                .where(SiteSettings.key == key)
+            )
+        else:
+            await SiteSettings(key=key, value=val).save()
+
+    # Reload the storage backend with the new settings.
+    error = None
+    try:
+        await load_backend()
+    except Exception as e:
+        error = f"Settings saved but backend failed to initialise: {e}"
+
+    return Template(
+        template_name="admin/settings.html",
+        context={"settings": settings, "saved": error is None, "error": error, "media_files": await (
+            MediaFile.select(MediaFile.filename, MediaFile.original_name)
+            .order_by(MediaFile.original_name)
+        )},
+    )
+
+
 # ── Media ──────────────────────────────────────────────────
 
 @get("/media")
@@ -627,7 +699,8 @@ async def media_list() -> Template:
         .order_by(MediaFile.created_at, ascending=False)
         
     )
-    return Template(template_name="admin/media.html", context={"files": rows})
+    backend = get_backend()
+    return Template(template_name="admin/media.html", context={"files": rows, "media_url": backend.url})
 
 
 @post("/media/upload")
@@ -644,7 +717,7 @@ async def media_upload(
         return Redirect(path="/admin/media")
 
     try:
-        file_data = upload.read() if hasattr(upload, "read") else upload
+        file_data = (await upload.read()) if hasattr(upload, "read") else upload
         original_name = getattr(upload, "filename", "upload")
         content_type = getattr(upload, "content_type", "application/octet-stream")
 
@@ -785,6 +858,7 @@ _guarded_handlers = [
     collections_update, collections_delete,
     items_list, items_new, items_create, items_edit, items_update, items_delete,
     media_list, media_upload, media_delete,
+    settings_page, settings_save,
     themes_list, themes_new, themes_create, themes_edit, themes_update,
     themes_activate, themes_delete,
 ]

@@ -116,3 +116,14 @@ class MediaFile(Table, tablename="media_files"):
     alt_text = Text(null=True, default=None)
     file_size = Integer(default=0)
     created_at = Timestamptz()
+
+
+# ── Settings ───────────────────────────────────────────────
+
+
+class SiteSettings(Table, tablename="site_settings"):
+    """Key/value store for site-wide configuration (e.g. storage backend)."""
+
+    key = Varchar(length=255, unique=True, required=True)
+    value = Text(default="")
+    updated_at = Timestamptz(auto_update=datetime.now)

@@ -7,6 +7,9 @@ All public URLs are resolved at runtime from the database:
   GET /{slug}        → Page by slug
   GET /{col}/{item}  → CollectionItem detail (with 301 redirect from old slugs)
 """
+import logging
+from pathlib import Path
+
 from litestar import Response, Router, get
 from litestar.exceptions import NotFoundException
 from litestar.response import Redirect
@@ -19,7 +22,10 @@ from cms.engine import (
     resolve_page,
     resolve_slug_redirect,
 )
-from db.tables import Collection
+from cms.storage import get_backend
+from db.tables import Collection, SiteSettings
+
+log = logging.getLogger(__name__)
 
 
 @get("/")
@@ -62,6 +68,43 @@ async def dynamic_page(slug: str) -> Response | Redirect:
     #     embedded in Pages via ${collection.*} expressions.)
 
     raise NotFoundException(detail="Page not found")
+
+
+_FALLBACK_FAVICON = Path("static/favicon.svg")
+
+
+@get("/favicon.ico")
+async def favicon() -> Response:
+    """Serve the user-configured favicon, or fall back to the static default."""
+    rows = await (
+        SiteSettings.select(SiteSettings.value)
+        .where(SiteSettings.key == "favicon")
+        .limit(1)
+    )
+    chosen = rows[0]["value"] if rows and rows[0].get("value") else None
+
+    if chosen:
+        backend = get_backend()
+        try:
+            body, content_type = await backend.get_object(chosen)
+            return Response(
+                content=body,
+                media_type=content_type,
+                headers={"Cache-Control": "public, max-age=3600"},
+            )
+        except Exception:
+            log.warning("Configured favicon %r not found, using fallback", chosen)
+
+    # Fallback to static file on disk.
+    if _FALLBACK_FAVICON.exists():
+        body = _FALLBACK_FAVICON.read_bytes()
+        return Response(
+            content=body,
+            media_type="image/svg+xml",
+            headers={"Cache-Control": "public, max-age=86400"},
+        )
+
+    raise NotFoundException(detail="No favicon available")
 
 
 pages_router = Router(path="/", route_handlers=[homepage, dynamic_page])

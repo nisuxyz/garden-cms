@@ -11,7 +11,7 @@ from contextlib import asynccontextmanager
 from litestar import Litestar
 from piccolo.engine.postgres import PostgresEngine
 
-from db.tables import Collection, ContentBlock, Page, Theme
+from db.tables import Collection, ContentBlock, Page, SiteSettings, Theme
 
 
 # ── Seed data ──────────────────────────────────────────────
@@ -328,6 +328,21 @@ async def init_db() -> None:
             items_per_page=12,
         ).save()
 
+    # ── Settings ───────────────────────────────────────────
+    if await SiteSettings.count() == 0:
+        defaults = [
+            ("storage_backend", "local"),
+            ("s3_bucket", ""),
+            ("s3_region", "us-east-1"),
+            ("s3_endpoint_url", ""),
+            ("s3_access_key_id", ""),
+            ("s3_secret_access_key", ""),
+            ("s3_prefix", ""),
+            ("s3_public_url", ""),
+        ]
+        for key, value in defaults:
+            await SiteSettings(key=key, value=value).save()
+
 
 @asynccontextmanager
 async def db_lifespan(app: Litestar) -> AsyncGenerator[None, None]:
@@ -339,6 +354,9 @@ async def db_lifespan(app: Litestar) -> AsyncGenerator[None, None]:
     await engine.start_connection_pool(max_inactive_connection_lifetime=1)
     try:
         await init_db()
+        # Initialise the storage backend from DB settings.
+        from cms.storage import load_backend
+        await load_backend()
         yield
     finally:
         await engine.close_connection_pool()
