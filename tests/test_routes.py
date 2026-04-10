@@ -63,6 +63,8 @@ async def test_get_active_theme(engine):
 
 @pytest.mark.asyncio
 async def test_render_page_returns_html(engine):
+    from cms.site_context import load_site_dict
+    await load_site_dict()
     page = await resolve_homepage()
     html = await render_page(page)
     assert "<!doctype html>" in html.lower()
@@ -70,11 +72,14 @@ async def test_render_page_returns_html(engine):
 
 
 @pytest.mark.asyncio
-async def test_render_page_resolves_expressions(engine):
+async def test_render_page_resolves_site_context(engine):
+    # Load site dict so {{ site.* }} globals work
+    from cms.site_context import load_site_dict
+    await load_site_dict()
     page = await resolve_page("resume")
     html = await render_page(page)
-    # Should not contain any raw ${} expressions
-    assert "${site." not in html
+    # Should not contain raw Jinja template tags for site context
+    assert "{{ site." not in html
 
 
 # ── Collection item routing ────────────────────────────────

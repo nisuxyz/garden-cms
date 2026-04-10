@@ -47,8 +47,7 @@ else %}New Theme{% endif %}{% endblock %} {% block admin_content %}
 
   <label>
     Base Template (Jinja2 — extends layout/base.html)
-    <textarea name="base_template" rows="25">
-{% if theme %}{{ theme.base_template }}{% else %}{{ "{% extends \"layout/base.html\" %}" }}
+    <textarea name="base_template" id="base-template-textarea" rows="25" hidden>{% if theme %}{{ theme.base_template }}{% else %}{{ "{% extends \"layout/base.html\" %}" }}
 {{ "{% block head %}" }}{{ "{{ extra_head }}" }}{{ "{% endblock %}" }}
 {{ "{% block body %}" }}
 <header>
@@ -64,8 +63,8 @@ else %}New Theme{% endif %}{% endblock %} {% block admin_content %}
 <footer>
   <small>Powered by Bussin CMS</small>
 </footer>
-{{ "{% endblock %}" }}{% endif %}</textarea
-    >
+{{ "{% endblock %}" }}{% endif %}</textarea>
+    <div data-editor data-target="base-template-textarea" data-lang="django" data-preview="theme-preview"></div>
   </label>
   <small>
     Extends <code>layout/base.html</code> (provides &lt;head&gt;, Pico CSS,
@@ -78,10 +77,18 @@ else %}New Theme{% endif %}{% endblock %} {% block admin_content %}
 
   <label>
     CSS
-    <textarea name="css" rows="15">
-{{ theme.css if theme else '' }}</textarea
-    >
+    <textarea name="css" id="css-textarea" rows="15" hidden>{{ theme.css if theme else '' }}</textarea>
+    <div data-editor data-target="css-textarea" data-lang="css" data-preview="theme-preview"></div>
   </label>
+  <iframe id="theme-preview" class="preview" title="Theme preview"></iframe>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      var tmpl = document.querySelector("[data-target='base-template-textarea']");
+      if (tmpl) tmpl._previewType = "theme";
+      var css = document.querySelector("[data-target='css-textarea']");
+      if (css) css._previewType = "css";
+    });
+  </script>
 
   <button type="submit">
     {% if theme %}Save Changes{% else %}Create Theme{% endif %}

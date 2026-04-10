@@ -2,95 +2,69 @@
 """
 Rendering utilities for the CMS pipeline.
 
-- Markdown → HTML conversion
-- Collection card-list rendering (expanding ``${item.*}`` in card templates)
+- Jinja template-string rendering (DB-stored page bodies, card templates)
 - Theme wrapper (inject content into base template)
 """
 from __future__ import annotations
 
 import json
-import re
 from pathlib import Path
 from typing import Any
 
 from jinja2 import Environment, FileSystemLoader
 from markupsafe import Markup
 
-from cms.expressions import ExpressionContext, ResolvedCollection
-from db.schema import render_md
-
 _TEMPLATE_DIR = Path(__file__).resolve().parent.parent / "templates"
 
 # Jinja2 env with filesystem loader — DB string templates can use
 # {% extends "layout/base.html" %} because from_string() inherits
 # the loader from the environment.
-_file_env = Environment(
-    loader=FileSystemLoader(str(_TEMPLATE_DIR)), autoescape=True
-)
-
-_ITEM_EXPR = re.compile(r"\$\{item\.([^}]+)\}")
+_file_env: Environment | None = None
 
 
-# ── Card rendering ─────────────────────────────────────────
-
-
-def render_card(
-    card_template: str, item: dict[str, Any], collection_slug: str
-) -> str:
-    """Render a single card by replacing ``${item.*}`` in *card_template*."""
-
-    def _replace(m: re.Match) -> str:
-        field = m.group(1).strip()
-        # Check top-level columns first, then the JSON ``data`` blob.
-        val = item.get(field)
-        if val is None:
-            data = item.get("data", {})
-            if isinstance(data, str):
-                data = json.loads(data) if data else {}
-            val = data.get(field, "")
-        if val is None:
-            val = ""
-        # Special handling: render markdown fields in cards.
-        if isinstance(val, str) and "\n" in val and len(val) > 200:
-            val = render_md(val)
-        return str(val)
-
-    return _ITEM_EXPR.sub(_replace, card_template)
-
-
-def render_card_list(
-    rc: ResolvedCollection,
-    page: int = 1,
-) -> str:
-    """Render a collection's items through its card template.
-
-    Returns an HTML fragment including a *Load more* button when
-    ``rc.has_more`` is True.
-    """
-    col = rc.collection
-    if not col:
-        return ""
-
-    if not rc.items:
-        return col.get("empty_template", "")
-
-    card_tpl = col.get("card_template", "")
-    slug = col.get("slug", "")
-    parts: list[str] = []
-
-    for item in rc.items:
-        parts.append(render_card(card_tpl, item, slug))
-
-    html = "\n".join(parts)
-
-    if rc.has_more:
-        next_page = page + 1
-        html += (
-            f'\n<button hx-get="/api/collection/{slug}/feed?page={next_page}" '
-            f'hx-swap="outerHTML" hx-target="this">Load more</button>'
+def get_env() -> Environment:
+    """Return the shared Jinja2 env (created lazily, then cached)."""
+    global _file_env
+    if _file_env is None:
+        _file_env = Environment(
+            loader=FileSystemLoader(str(_TEMPLATE_DIR)), autoescape=True,
         )
+    return _file_env
 
-    return html
+
+def set_env(env: Environment) -> None:
+    """Replace the module-level env (called from app init)."""
+    global _file_env
+    _file_env = env
+
+
+# ── Template-string rendering ──────────────────────────────
+
+
+def render_template_string(source: str, context: dict[str, Any] | None = None) -> str:
+    """Render a Jinja template *source* string with *context*.
+
+    The env has JinjaX registered (if ``init_catalog`` was called),
+    so ``<CollectionFeed slug="blog" />`` etc. work inside source.
+    """
+    env = get_env()
+    tpl = env.from_string(source)
+    return tpl.render(context or {})
+
+
+def render_card(card_template: str, item: dict[str, Any]) -> str:
+    """Render a card template with ``item`` in context.
+
+    JSON ``data`` fields are unpacked to top-level for convenience.
+    """
+    data = item.get("data", {})
+    if isinstance(data, str):
+        data = json.loads(data) if data else {}
+    merged = {**item}
+    for k, v in data.items():
+        if k not in merged:
+            merged[k] = v
+    return render_template_string(card_template, {"item": merged})
 
 
 # ── Theme rendering ────────────────────────────────────────
@@ -108,11 +82,11 @@ def render_theme(
 
     The theme's *base_template* (a Jinja2 string stored in the DB) should
     ``{% extends "layout/base.html" %}`` and override ``{% block body %}``
-    and optionally ``{% block head %}``.  Using ``_file_env.from_string``
-    gives the DB string access to filesystem templates for ``{% extends %}``.
+    and optionally ``{% block head %}``.
     """
     extra_head = Markup(f"<style>{css}</style>") if css else ""
-    tpl = _file_env.from_string(base_template)
+    env = get_env()
+    tpl = env.from_string(base_template)
     ctx: dict[str, Any] = {
         "title": title,
         "content": Markup(content_html),
@@ -122,14 +96,3 @@ def render_theme(
     if site_head:
         ctx["extra_admin_head"] = Markup(site_head)
     return tpl.render(ctx)
-
-
-# ── Expand collection placeholders ─────────────────────────
-
-
-def expand_collections(html: str, ctx: ExpressionContext) -> str:
-    """Replace ``<!--collection:…-->`` placeholders with rendered card HTML."""
-    for placeholder, rc in ctx.collection_blocks:
-        card_html = render_card_list(rc)
-        html = html.replace(placeholder, card_html)
-    return html

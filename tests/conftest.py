@@ -61,6 +61,17 @@ async def engine():
     # Seed default CMS content
     await init_db()
 
+    # Load site context cache and set up Jinja globals for tests.
+    from cms.site_context import load_site_dict
+    await load_site_dict()
+
+    from cms.renderer import get_env
+    from cms.site_context import _site_dict
+    from cms.storage import get_backend
+    env = get_env()
+    env.globals["site"] = _site_dict
+    env.globals["media_url"] = lambda f: get_backend().url(f)
+
     yield test_engine
 
     # Cleanup

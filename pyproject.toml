@@ -7,7 +7,6 @@ requires-python = ">=3.13"
 dependencies = [
     "litestar[cryptography,jinja,standard]>=2.16.0",
     "uvicorn[standard]>=0.34.0",
-    "markdown-it-py>=4.0.0",
     "python-dotenv>=1.2.2",
     "piccolo[postgres]>=1.0.0",
     "piccolo_api>=1.0.0",
@@ -16,6 +15,7 @@ dependencies = [
     "authlib>=1.3.0",
     "aioboto3>=15.5.0",
     "jinjax>=0.63",
+    "syncwrap>=0.0.1",
 ]
 
 [project.optional-dependencies]

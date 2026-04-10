@@ -141,96 +141,76 @@ _DEFAULT_CONTENT_BLOCKS = [
 _BLOG_CARD_TEMPLATE = """\
 <article>
   <header>
-    <h3><a href="/blog/${item.slug}">${item.title}</a></h3>
-    <small class="meta">${item.created_at}</small>
+    <h3><a href="/blog/{{ item.slug }}">{{ item.title }}</a></h3>
+    <small class="meta">{{ item.created_at }}</small>
   </header>
-  <p>${item.summary}</p>
-  <footer>${item.tags}</footer>
+  <p>{{ item.summary }}</p>
+  <footer>{{ item.tags }}</footer>
 </article>
 """
 
 _BLOG_DETAIL_TEMPLATE = """\
-# ${item.title}
-
-<small class="meta">${item.created_at}</small>
-
-${item.summary}
-
----
-
-${item.body}
-
-${item.tags}
+<h1>{{ item.title }}</h1>
+<small class="meta">{{ item.created_at }}</small>
+<p>{{ item.summary }}</p>
+<hr>
+{{ item.body }}
+<p>{{ item.tags }}</p>
 """
 
 _PROJECT_CARD_TEMPLATE = """\
 <article>
   <header>
-    <h3><a href="/projects/${item.slug}">${item.title}</a></h3>
+    <h3><a href="/projects/{{ item.slug }}">{{ item.title }}</a></h3>
   </header>
-  <p>${item.summary}</p>
-  <footer>${item.tags}</footer>
+  <p>{{ item.summary }}</p>
+  <footer>{{ item.tags }}</footer>
 </article>
 """
 
 _PROJECT_DETAIL_TEMPLATE = """\
-# ${item.title}
-
-${item.summary}
-
----
-
-${item.body}
-
-${item.tags}
+<h1>{{ item.title }}</h1>
+<p>{{ item.summary }}</p>
+<hr>
+{{ item.body }}
+<p>{{ item.tags }}</p>
 """
 
-_HOME_PAGE_MD = """\
+_HOME_PAGE = """\
 <div class="hero">
-
-# ${site.hero_headline}
-
-${site.hero_subtext}
-
+  <h1>{{ site.hero_headline }}</h1>
+  <p>{{ site.hero_subtext }}</p>
 </div>
 
-${site.about}
+<p>{{ site.about }}</p>
 
-## Recent Posts
+<h2>Recent Posts</h2>
+<CollectionFeed slug="blog" limit=3 />
 
-${collection.blog:3}
-
-## Featured Projects
-
-${collection.projects:featured:4}
+<h2>Featured Projects</h2>
+<CollectionFeed slug="projects" limit=4 />
 """
 
-_BLOG_PAGE_MD = """\
-# Blog
-
-${collection.blog}
+_BLOG_PAGE = """\
+<h1>Blog</h1>
+<CollectionFeed slug="blog" />
 """
 
-_PROJECTS_PAGE_MD = """\
-# Projects
-
-${collection.projects}
+_PROJECTS_PAGE = """\
+<h1>Projects</h1>
+<CollectionFeed slug="projects" />
 """
 
-_RESUME_PAGE_MD = """\
-# Resume / CV
-
-${site.resume.intro}
-
-${site.resume.experience}
-
-${site.resume.skills}
+_RESUME_PAGE = """\
+<h1>Resume / CV</h1>
+<p>{{ site["resume.intro"] }}</p>
+{{ site["resume.experience"] }}
+{{ site["resume.skills"] }}
 """
 
-_CONTACT_PAGE_MD = """\
-# Contact
-
-${site.contact.intro}
+_CONTACT_PAGE = """\
+<h1>Contact</h1>
+<p>{{ site["contact.intro"] }}</p>
 
 <form method="post" action="/contact" hx-post="/contact" hx-target="#contact-area" hx-swap="innerHTML">
   <div id="contact-area">
@@ -279,17 +259,17 @@ async def init_db() -> None:
     # ── Pages ──────────────────────────────────────────────
     if await Page.count() == 0:
         pages = [
-            ("Home", "home", _HOME_PAGE_MD, True, True, 0),
-            ("Blog", "blog", _BLOG_PAGE_MD, False, True, 1),
-            ("Projects", "projects", _PROJECTS_PAGE_MD, False, True, 2),
-            ("Resume", "resume", _RESUME_PAGE_MD, False, True, 3),
-            ("Contact", "contact", _CONTACT_PAGE_MD, False, True, 4),
+            ("Home", "home", _HOME_PAGE, True, True, 0),
+            ("Blog", "blog", _BLOG_PAGE, False, True, 1),
+            ("Projects", "projects", _PROJECTS_PAGE, False, True, 2),
+            ("Resume", "resume", _RESUME_PAGE, False, True, 3),
+            ("Contact", "contact", _CONTACT_PAGE, False, True, 4),
         ]
-        for title, slug, body_md, is_homepage, show_in_nav, nav_order in pages:
+        for title, slug, body, is_homepage, show_in_nav, nav_order in pages:
             await Page(
                 title=title,
                 slug=slug,
-                body_md=body_md,
+                body=body,
                 is_homepage=is_homepage,
                 show_in_nav=show_in_nav,
                 nav_order=nav_order,
@@ -357,6 +337,9 @@ async def db_lifespan(app: Litestar) -> AsyncGenerator[None, None]:
         # Initialise the storage backend from DB settings.
         from cms.storage import load_backend
         await load_backend()
+        # Load ContentBlock cache into memory.
+        from cms.site_context import load_site_dict
+        await load_site_dict()
         yield
     finally:
         await engine.close_connection_pool()

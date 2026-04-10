@@ -65,7 +65,7 @@ async def dynamic_page(slug: str) -> Response | Redirect:
     # 4. Maybe the first segment is a collection slug (bare collection page).
     #    Check if there's a Page whose slug matches the collection slug.
     #    (Collections themselves don't have standalone pages — they're
-    #     embedded in Pages via ${collection.*} expressions.)
+    #     embedded in Pages via <CollectionFeed /> components.)
 
     raise NotFoundException(detail="Page not found")
 

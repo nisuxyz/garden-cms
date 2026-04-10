@@ -3,17 +3,16 @@
 High-level CMS page processing pipeline.
 
     resolve_page  → fetch a Page row by slug (or homepage flag)
-    render_page   → full pipeline: expressions → markdown → theme
+    render_page   → full pipeline: Jinja render body → theme wrap
     render_item   → render a CollectionItem detail page
     get_nav_items → navigation items for the active theme
 """
 from __future__ import annotations
 
+import json
 from typing import Any
 
-from cms.expressions import ExpressionContext, resolve_expressions
-from cms.renderer import expand_collections, render_card_list, render_theme
-from db.schema import render_md
+from cms.renderer import render_card, render_template_string, render_theme
 from db.tables import (
     Collection,
     CollectionItem,
@@ -84,34 +83,26 @@ async def _get_site_head() -> str | None:
 
 
 async def render_page(page: dict[str, Any]) -> str:
-    """Full pipeline: expressions → markdown → expand collections → theme.
+    """Full pipeline: render body as Jinja template → wrap in theme.
 
     Returns a complete HTML document string.
     """
-    ctx = ExpressionContext()
+    # 1. Render the page body as a Jinja template string.
+    #    JinjaX components like <CollectionFeed slug="blog" /> and
+    #    globals like {{ site.hero_headline }} are resolved here.
+    content_html = render_template_string(page["body"])
 
-    # 1. Resolve ${} expressions in the page markdown body.
-    processed_md = await resolve_expressions(page["body_md"], ctx)
-
-    # 2. Convert markdown to HTML.
-    content_html = render_md(processed_md)
-
-    # 3. Expand collection placeholders into rendered card HTML.
-    content_html = expand_collections(content_html, ctx)
-
-    # 4. Wrap in theme.
+    # 2. Wrap in theme.
     theme = None
     if page.get("theme"):
         theme = (
             await Theme.select()
             .where(Theme.id == page["theme"])
             .first()
-            
         )
     if theme is None:
         theme = await get_active_theme()
     if theme is None:
-        # Fallback: return raw content without a theme wrapper.
         return content_html
 
     nav = await get_nav_items()
@@ -188,21 +179,22 @@ async def render_item(
 ) -> str:
     """Render a CollectionItem detail page through its collection's template.
 
-    Pipeline: resolve ``${item.*}`` → markdown → theme.
+    Pipeline: render detail_template as Jinja with ``item`` context → theme.
     """
-    ctx = ExpressionContext(item=item)
+    detail_tpl = collection.get("detail_template", "")
+    if not detail_tpl:
+        detail_tpl = "<h1>{{ item.title }}</h1>\n{{ item.body }}"
 
-    detail_md = collection.get("detail_template", "")
-    if not detail_md:
-        # Fallback: render item title + data dump.
-        detail_md = f"# ${{item.title}}\n\n${{item.body}}"
+    # Unpack JSON data fields into top-level for template access.
+    data = item.get("data", {})
+    if isinstance(data, str):
+        data = json.loads(data) if data else {}
+    merged = {**item}
+    for k, v in data.items():
+        if k not in merged:
+            merged[k] = v
 
-    # Resolve item-level expressions.
-    processed_md = await resolve_expressions(detail_md, ctx)
-
-    # Also support ${site.*} and ${media.*} in detail templates.
-    content_html = render_md(processed_md)
-    content_html = expand_collections(content_html, ctx)
+    content_html = render_template_string(detail_tpl, {"item": merged})
 
     theme = await get_active_theme()
     if theme is None:
@@ -234,7 +226,6 @@ async def render_collection_feed(
         await Collection.select()
         .where(Collection.slug == collection_slug)
         .first()
-        
     )
     if col is None:
         return None
@@ -242,7 +233,7 @@ async def render_collection_feed(
     per_page = col.get("items_per_page", 10)
     offset = (page - 1) * per_page
 
-    query = (
+    rows = await (
         CollectionItem.select()
         .where(CollectionItem.collection == col["id"])
         .where(CollectionItem.published.eq(True))
@@ -250,13 +241,22 @@ async def render_collection_feed(
         .offset(offset)
         .limit(per_page + 1)
     )
-    rows = await query
     has_more = len(rows) > per_page
     items = rows[:per_page]
 
-    from cms.expressions import ResolvedCollection
+    if not items:
+        return col.get("empty_template", "")
 
-    rc = ResolvedCollection(
-        collection=col, items=items, has_more=has_more, next_page=page + 1
-    )
-    return render_card_list(rc, page=page)
+    card_tpl = col.get("card_template", "")
+    slug = col.get("slug", "")
+    parts: list[str] = [render_card(card_tpl, item) for item in items]
+    html = "\n".join(parts)
+
+    if has_more:
+        next_page = page + 1
+        html += (
+            f'\n<button hx-get="/api/collection/{slug}/feed?page={next_page}" '
+            f'hx-swap="outerHTML" hx-target="this">Load more</button>'
+        )
+
+    return html

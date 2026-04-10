@@ -4,6 +4,22 @@ head %}
   rel="stylesheet"
   href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.colors.min.css"
 />
+<link
+  rel="stylesheet"
+  href="https://unpkg.com/prismjs/themes/prism.min.css"
+/>
+<link
+  rel="stylesheet"
+  href="https://unpkg.com/codejar-linenumbers/es/codejar-linenumbers.css"
+/>
+<script type="importmap">
+  {
+    "imports": {
+      "codejar": "https://unpkg.com/codejar/dist/codejar.js",
+      "codejar-linenumbers": "https://unpkg.com/codejar-linenumbers/es/index.js"
+    }
+  }
+</script>
 <style>
   /* Two-column admin layout */
   main {
@@ -51,6 +67,29 @@ head %}
     gap: 1rem;
   }
 
+  /* CodeJar editor */
+  [data-editor] {
+    font-family: var(--pico-font-family-monospace, monospace);
+    font-size: 0.85rem;
+    line-height: 1.5;
+    padding: 0.75rem;
+    border: 1px solid var(--pico-muted-border-color);
+    border-radius: var(--pico-border-radius);
+    min-height: 12rem;
+    max-height: 36rem;
+    overflow: auto;
+    tab-size: 2;
+    white-space: pre-wrap;
+  }
+  /* Preview iframe */
+  iframe.preview {
+    width: 100%;
+    min-height: 20rem;
+    border: 1px solid var(--pico-muted-border-color);
+    border-radius: var(--pico-border-radius);
+    background: #fff;
+  }
+
   /* HTMX request spinner */
   button.htmx-request {
     position: relative;
@@ -75,7 +114,8 @@ head %}
     }
   }
 </style>
-{% endblock %} {% block body %}
+{% endblock %}
+{% block body %}
 <header>
   <nav>
     <ul>
@@ -107,4 +147,71 @@ head %}
   </aside>
   <section>{% block admin_content %}{% endblock %}</section>
 </main>
+
+{# <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script> #}
+{# <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markup-templating.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-django.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-css.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script> #}
+
+<!-- place the CSS file after the HighlightJS/PrismJS stylesheets -->
+{# <link rel="stylesheet" href="https://unpkg.com/codejar-linenumbers/es/codejar-linenumbers.css"/> #}
+{# <script type="application/javascript" src="https://unpkg.com/codejar-linenumbers/es/index.js"></script> #}
+
+<script
+  type="application/javascript"
+  src="https://unpkg.com/prismjs/prism.js"
+></script>
+<script
+  type="application/javascript"
+  src="https://unpkg.com/prismjs/components/prism-javascript.js"
+></script>
+<script src="https://unpkg.com/prismjs/components/prism-markup-templating.js"></script>
+<script src="https://unpkg.com/prismjs/components/prism-django.min.js"></script>
+{# <script src="https://unpkg.com/prismjs/plugins/prism-autoloader.min.js"></script> #}
+
+<script type="module">
+import { CodeJar } from 'codejar';
+import { withLineNumbers } from 'codejar-linenumbers';
+
+/* ── CodeJar editor initialisation ─────────────────────── */
+document.addEventListener("DOMContentLoaded", function () {
+  document.querySelectorAll("[data-editor]").forEach(function (el) {
+    var target = document.getElementById(el.dataset.target);
+    if (!target) return;
+    // el.textContent = target.value;
+    var lang = el.dataset.lang || "jinja2";
+
+    const highlight = (editor) => {
+      let code = editor.textContent;
+      code = Prism.highlight(code, Prism.languages[lang], lang);
+      editor.innerHTML = code;
+    };
+
+    el.classList.add("language-" + lang);
+
+    var jar = CodeJar(el, withLineNumbers(highlight), { tab: "  ", spellcheck: false });
+    jar.onUpdate(function (code) {
+      console.log('Code updated:', code);
+      target.value = code;
+      /* Trigger debounced preview if a preview iframe exists */
+      var previewFrame = document.getElementById(el.dataset.preview);
+      if (previewFrame && el._previewType) {
+        clearTimeout(el._debounce);
+        el._debounce = setTimeout(function () {
+          var form = new FormData();
+          form.append("source", code);
+          form.append("type", el._previewType);
+          fetch("/admin/preview", { method: "POST", body: form })
+            .then(function (r) { return r.text(); })
+            .then(function (html) { previewFrame.srcdoc = html; });
+        }, 400);
+      }
+    });
+    jar.updateCode(target.value);
+    el._jar = jar;
+  });
+});
+</script>
 {% endblock %}

@@ -48,13 +48,12 @@ admin_content %}
 
   <label>
     Fields Schema (JSON)
-    <textarea name="fields_schema" rows="8">
-{% if collection %}{{ collection.fields_schema | tojson(indent=2) }}{% else %}[
+    <textarea name="fields_schema" id="fields-schema-textarea" rows="8" hidden>{% if collection %}{{ collection.fields_schema | tojson(indent=2) }}{% else %}[
   {"name": "summary", "type": "text", "required": true},
   {"name": "body", "type": "markdown", "required": true},
   {"name": "tags", "type": "list", "required": false}
-]{% endif %}</textarea
-    >
+]{% endif %}</textarea>
+    <div data-editor data-target="fields-schema-textarea" data-lang="json"></div>
   </label>
   <small>
     Array of objects:
@@ -65,37 +64,40 @@ admin_content %}
   </small>
 
   <label>
-    Card Template (HTML with <code>${item.*}</code>)
-    <textarea name="card_template" rows="10">
-{{ collection.card_template if collection else '' }}</textarea
-    >
+    Card Template (Jinja HTML with <code>{{ "{{ item.* }}" }}</code>)
+    <textarea name="card_template" id="card-template-textarea" rows="10" hidden>{{ collection.card_template if collection else '' }}</textarea>
+    <div data-editor data-target="card-template-textarea" data-lang="django" data-preview="card-preview"></div>
   </label>
   <small>
     Rendered for each item in collection listings. Use
-    <code>${item.title}</code>, <code>${item.slug}</code>,
-    <code>${item.field_name}</code> to inject values.
+    <code>{{ "{{ item.title }}" }}</code>, <code>{{ "{{ item.slug }}" }}</code>,
+    <code>{{ "{{ item.field_name }}" }}</code> to inject values.
   </small>
+  <iframe id="card-preview" class="preview" title="Card preview"></iframe>
 
   <label>
-    Detail Template (Markdown with <code>${item.*}</code>)
-    <textarea name="detail_template" rows="10">
-{{ collection.detail_template if collection else '' }}</textarea
-    >
+    Detail Template (Jinja HTML with <code>{{ "{{ item.* }}" }}</code>)
+    <textarea name="detail_template" id="detail-template-textarea" rows="10" hidden>{{ collection.detail_template if collection else '' }}</textarea>
+    <div data-editor data-target="detail-template-textarea" data-lang="django"></div>
   </label>
   <small>
-    Rendered as the full detail page for a single item. Markdown +
-    <code>${}</code> expressions supported.
+    Rendered as the full detail page for a single item. Jinja template syntax supported.
   </small>
 
   <label>
     Empty List Template (HTML)
-    <textarea name="empty_template" rows="4">
-{{ collection.empty_template if collection else '' }}</textarea
-    >
+    <textarea name="empty_template" id="empty-template-textarea" rows="4" hidden>{{ collection.empty_template if collection else '' }}</textarea>
+    <div data-editor data-target="empty-template-textarea" data-lang="django"></div>
   </label>
   <small>
     Shown when the collection has no published items. Plain HTML.
   </small>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      var card = document.querySelector("[data-target='card-template-textarea']");
+      if (card) card._previewType = "card";
+    });
+  </script>
 
   <button type="submit">
     {% if collection %}Save Changes{% else %}Create Collection{% endif %}

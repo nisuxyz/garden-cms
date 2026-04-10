@@ -1,136 +1,83 @@
 # tests/test_cms.py
-"""Tests for the CMS expression parser and renderer."""
+"""Tests for the CMS rendering pipeline (site context + Jinja templates)."""
 import pytest
 
-from cms.expressions import (
-    ExpressionContext,
-    _resolve_item,
-    _split_preserving_code,
-    resolve_expressions,
-)
-from db.tables import Collection, CollectionItem, ContentBlock, MediaFile
+from cms.renderer import render_card, render_template_string
+from cms.site_context import _site_dict, get_site_dict, load_site_dict
+from db.tables import ContentBlock
 
 
-# ── Tokeniser ──────────────────────────────────────────────
-
-
-def test_split_preserving_code_no_fences():
-    parts = _split_preserving_code("hello ${site.key} world")
-    assert len(parts) == 1
-    assert parts[0] == (False, "hello ${site.key} world")
-
-
-def test_split_preserving_code_with_fence():
-    text = "before\n```\n${site.key}\n```\nafter"
-    parts = _split_preserving_code(text)
-    assert any(is_code for is_code, _ in parts)
-    code_parts = [frag for is_code, frag in parts if is_code]
-    assert "${site.key}" in code_parts[0]
-
-
-# ── Item resolver (sync, no DB) ───────────────────────────
-
-
-def test_resolve_item_from_data():
-    ctx = ExpressionContext(
-        item={"title": "Hello", "data": {"summary": "A summary"}}
-    )
-    assert _resolve_item("title", ctx) == "Hello"
-    assert _resolve_item("summary", ctx) == "A summary"
-
-
-def test_resolve_item_missing_field():
-    ctx = ExpressionContext(item={"title": "Hello", "data": {}})
-    assert _resolve_item("nonexistent", ctx) == ""
-
-
-def test_resolve_item_no_context():
-    ctx = ExpressionContext(item=None)
-    assert _resolve_item("title", ctx) == ""
-
-
-# ── Expression resolution (requires DB) ───────────────────
+# ── Site context cache ─────────────────────────────────────
 
 
 @pytest.mark.asyncio
-async def test_resolve_site_text(engine):
-    result = await resolve_expressions("Hello ${site.hero_headline}!")
-    # Should contain the seeded headline value
-    assert "Hello" in result
-    assert "${site.hero_headline}" not in result
+async def test_load_site_dict(engine):
+    await load_site_dict()
+    d = get_site_dict()
+    assert "hero_headline" in d
+    assert d["hero_headline"] != ""
 
 
 @pytest.mark.asyncio
-async def test_resolve_site_markdown(engine):
+async def test_site_dict_invalidation(engine):
+    await load_site_dict()
+    old_val = get_site_dict().get("hero_headline")
+    await ContentBlock.update(
+        {ContentBlock.value: "Updated Headline"}
+    ).where(ContentBlock.key == "hero_headline")
+    await load_site_dict()
+    assert get_site_dict()["hero_headline"] == "Updated Headline"
+    assert get_site_dict()["hero_headline"] != old_val
+
+
+@pytest.mark.asyncio
+async def test_site_dict_image_block(engine):
     await ContentBlock(
-        key="test.mdblock", label="Test", block_type="markdown", value="**bold**",
+        key="test.img", label="Test Img", block_type="image", value="photo.jpg",
     ).save()
-    result = await resolve_expressions("${site.test.mdblock}")
-    assert "<strong>bold</strong>" in result
+    await load_site_dict()
+    # Image blocks should have a URL, not raw filename
+    assert get_site_dict()["test.img"].endswith("photo.jpg")
 
 
-@pytest.mark.asyncio
-async def test_resolve_site_missing_key(engine):
-    result = await resolve_expressions("${site.nonexistent_key_xyz}")
+# ── Template string rendering ──────────────────────────────
+
+
+def test_render_template_string_basic():
+    result = render_template_string("<p>{{ name }}</p>", {"name": "World"})
+    assert "<p>World</p>" in result
+
+
+def test_render_template_string_empty():
+    result = render_template_string("")
     assert result == ""
 
 
-@pytest.mark.asyncio
-async def test_resolve_collection_placeholder(engine):
-    ctx = ExpressionContext()
-    result = await resolve_expressions("${collection.blog:3}", ctx)
-    assert "<!--collection:blog:" in result
-    assert len(ctx.collection_blocks) == 1
-    _, rc = ctx.collection_blocks[0]
-    assert rc.collection.get("slug") == "blog"
+def test_render_template_string_no_context():
+    result = render_template_string("<p>Hello</p>")
+    assert "<p>Hello</p>" in result
 
 
-@pytest.mark.asyncio
-async def test_resolve_media(engine):
-    await MediaFile(
-        filename="abc123.jpg",
-        original_name="photo.jpg",
-        file_path="data/media/abc123.jpg",
-        mime_type="image/jpeg",
-        alt_text="A photo",
-    ).save()
-    result = await resolve_expressions("${media.abc123.jpg}")
-    assert '<img src="/media/abc123.jpg"' in result
-    assert 'alt="A photo"' in result
+# ── Card rendering ─────────────────────────────────────────
 
 
-@pytest.mark.asyncio
-async def test_resolve_media_missing(engine):
-    result = await resolve_expressions("${media.does_not_exist.png}")
-    assert result == ""
+def test_render_card_basic():
+    tpl = '<article><h3>{{ item.title }}</h3></article>'
+    item = {"title": "My Post", "slug": "my-post", "data": {}}
+    result = render_card(tpl, item)
+    assert "<h3>My Post</h3>" in result
 
 
-@pytest.mark.asyncio
-async def test_code_fence_preserved(engine):
-    text = "```\n${site.hero_headline}\n```"
-    result = await resolve_expressions(text)
-    assert "${site.hero_headline}" in result
+def test_render_card_with_data_fields():
+    tpl = '<p>{{ item.summary }}</p>'
+    item = {"title": "Post", "data": {"summary": "A summary"}}
+    result = render_card(tpl, item)
+    assert "A summary" in result
 
 
-@pytest.mark.asyncio
-async def test_unknown_expression_returns_empty(engine):
-    result = await resolve_expressions("${unknown.thing}")
-    assert result == ""
-
-
-@pytest.mark.asyncio
-async def test_item_expression_in_context(engine):
-    ctx = ExpressionContext(
-        item={"title": "My Post", "slug": "my-post", "data": {"summary": "Sum"}}
-    )
-    result = await resolve_expressions("# ${item.title}\n${item.summary}", ctx)
-    assert "My Post" in result
-    assert "Sum" in result
-
-
-@pytest.mark.asyncio
-async def test_multiple_expressions(engine):
-    result = await resolve_expressions(
-        "${site.hero_headline} - ${site.hero_subtext}"
-    )
-    assert "${site." not in result
+def test_render_card_json_string_data():
+    import json
+    tpl = '<p>{{ item.tags }}</p>'
+    item = {"title": "Post", "data": json.dumps({"tags": "a, b, c"})}
+    result = render_card(tpl, item)
+    assert "a, b, c" in result

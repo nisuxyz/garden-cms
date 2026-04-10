@@ -17,6 +17,8 @@ from litestar.response import Redirect, Response, Template
 from db.tables import Collection, CollectionItem, CollectionItemSlugHistory, ContentBlock, MediaFile, Page, SiteSettings, Theme
 from cms.css_frameworks import CSS_FRAMEWORKS
 from cms.media import MediaError, delete_media, save_upload
+from cms.renderer import render_template_string, render_theme
+from cms.site_context import invalidate_site_dict
 from cms.storage import get_backend, load_backend
 from middleware.auth import admin_guard
 from middleware.oauth import (
@@ -174,7 +176,7 @@ async def pages_create(
 ) -> Redirect:
     title = (data.get("title") or "").strip()
     slug = (data.get("slug") or "").strip()
-    body_md = (data.get("body_md") or "").strip()
+    body = (data.get("body") or "").strip()
     meta_description = (data.get("meta_description") or "").strip() or None
     is_homepage = data.get("is_homepage") == "on"
     show_in_nav = data.get("show_in_nav") == "on"
@@ -190,7 +192,7 @@ async def pages_create(
     await Page(
         title=title,
         slug=slug,
-        body_md=body_md,
+        body=body,
         meta_description=meta_description,
         is_homepage=is_homepage,
         show_in_nav=show_in_nav,
@@ -219,7 +221,7 @@ async def pages_update(
 
     title = (data.get("title") or "").strip()
     slug = (data.get("slug") or "").strip()
-    body_md = (data.get("body_md") or "").strip()
+    body = (data.get("body") or "").strip()
     meta_description = (data.get("meta_description") or "").strip() or None
     is_homepage = data.get("is_homepage") == "on"
     show_in_nav = data.get("show_in_nav") == "on"
@@ -234,7 +236,7 @@ async def pages_update(
         {
             Page.title: title,
             Page.slug: slug,
-            Page.body_md: body_md,
+            Page.body: body,
             Page.meta_description: meta_description,
             Page.is_homepage: is_homepage,
             Page.show_in_nav: show_in_nav,
@@ -310,6 +312,7 @@ async def content_create(
     block_type = (data.get("block_type") or "text").strip()
     value = (data.get("value") or "").strip()
     await ContentBlock(key=key, label=label, block_type=block_type, value=value).save()
+    await invalidate_site_dict()
     return Redirect(path="/admin/content")
 
 
@@ -329,6 +332,7 @@ async def content_update(
     await ContentBlock.update(
         {ContentBlock.value: value, ContentBlock.updated_at: datetime.now(timezone.utc)}
     ).where(ContentBlock.id == block_id)
+    await invalidate_site_dict()
 
     if request.htmx:
         return Response(
@@ -345,6 +349,7 @@ async def content_update(
 @post("/content/{block_id:int}/delete")
 async def content_delete(block_id: int, request: HTMXRequest) -> Response | Redirect:
     await ContentBlock.delete().where(ContentBlock.id == block_id)
+    await invalidate_site_dict()
     if request.htmx:
         return Response(content="", status_code=200)
     return Redirect(path="/admin/content")
@@ -894,6 +899,89 @@ async def themes_delete(theme_id: int, request: HTMXRequest) -> Response | Redir
     return Redirect(path="/admin/themes")
 
 
+# ── Preview ────────────────────────────────────────────────
+
+@post("/preview")
+async def preview(
+    data: Annotated[dict, Body(media_type=RequestEncodingType.MULTI_PART)],
+) -> Response:
+    """Render a template source string and return full themed HTML.
+
+    Used by the CodeJar live-preview iframe in edit pages.
+    """
+    print("Received preview request with data:", data, data.keys())
+    source = (data.get("source") or "").strip()
+    preview_type = (data.get("type") or "page").strip()
+
+    print(f"Preview request: type={preview_type}, source={source[:100]}...")
+
+    try:
+        if preview_type in ("page", "detail"):
+            # Render as a page/detail body with full theme wrapping.
+            content_html = render_template_string(source)
+            theme = await Theme.select().where(Theme.active.eq(True)).first()
+            if theme:
+                from cms.engine import get_nav_items, _get_site_head
+                nav = await get_nav_items()
+                site_head = await _get_site_head()
+                html = render_theme(
+                    base_template=theme["base_template"],
+                    css=theme.get("css", ""),
+                    title="Preview",
+                    content_html=content_html,
+                    nav_items=nav,
+                    site_head=site_head,
+                )
+            else:
+                html = content_html
+
+        elif preview_type == "card":
+            # Render card template with sample item data.
+            sample_item = {
+                "title": "Sample Item",
+                "slug": "sample-item",
+                "summary": "This is a preview of the card template.",
+                "body": "<p>Sample body content.</p>",
+                "tags": "sample, preview",
+                "created_at": "2026-01-01",
+            }
+            content_html = render_template_string(source, {"item": sample_item})
+            html = content_html
+
+        elif preview_type == "theme":
+            # Render as a base template with sample content.
+            html = render_theme(
+                base_template=source,
+                css="",
+                title="Theme Preview",
+                content_html="<h1>Theme Preview</h1><p>This is sample content.</p>",
+                nav_items=[{"title": "Home", "slug": "home", "url": "/"}],
+            )
+
+        elif preview_type == "css":
+            # Render active theme with this CSS.
+            theme = await Theme.select().where(Theme.active.eq(True)).first()
+            if theme:
+                html = render_theme(
+                    base_template=theme["base_template"],
+                    css=source,
+                    title="CSS Preview",
+                    content_html="<h1>CSS Preview</h1><p>This is sample content.</p><article><h3>Sample Card</h3><p>Card content here.</p></article>",
+                    nav_items=[{"title": "Home", "slug": "home", "url": "/"}],
+                )
+            else:
+                html = f"<style>{source}</style><p>No active theme.</p>"
+
+        else:
+            # Default: just render as template string.
+            html = render_template_string(source)
+
+    except Exception as exc:
+        html = f"<pre style='color:red'>{exc!s}</pre>"
+
+    return Response(content=html, media_type="text/html")
+
+
 # ── Guarded and unguarded handlers ─────────────────────────
 
 
@@ -920,6 +1008,7 @@ _guarded_handlers = [
     settings_page, settings_save,
     themes_list, themes_new, themes_create, themes_edit, themes_update,
     themes_activate, themes_delete,
+    preview,
 ]
 
 _guarded_router = Router(

@@ -1,0 +1,5 @@
+{#def src, alt="" #}
+{#- Render an <img> tag with storage-resolved URL.
+    Usage: <MediaImage src="photo.jpg" alt="A photo" />
+-#}
+<img src="{{ media_url(src) }}" alt="{{ alt }}" />

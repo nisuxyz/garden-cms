@@ -33,11 +33,11 @@ class Theme(Table, tablename="themes"):
 
 
 class Page(Table, tablename="pages"):
-    """A CMS page. Body is Markdown with ${} expressions."""
+    """A CMS page. Body is a Jinja template string."""
 
     title = Text(required=True)
     slug = Varchar(length=255, unique=True, required=True)
-    body_md = Text(default="")
+    body = Text(default="")
     meta_description = Text(null=True, default=None)
     is_homepage = Boolean(default=False)
     show_in_nav = Boolean(default=True)
@@ -72,8 +72,8 @@ class Collection(Table, tablename="collections"):
     slug = Varchar(length=255, unique=True, required=True)
     description = Text(null=True, default=None)
     fields_schema = JSON(default=[])  # [{name, type, required}, …]
-    card_template = Text(default="")  # HTML with ${item.*}
-    detail_template = Text(default="")  # Markdown with ${item.*}
+    card_template = Text(default="")  # Jinja HTML with {{ item.* }}
+    detail_template = Text(default="")  # Jinja HTML with {{ item.* }}
     empty_template = Text(default="")  # HTML shown when collection has 0 items
     items_per_page = Integer(default=10)
     created_at = Timestamptz()

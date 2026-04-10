@@ -2,7 +2,6 @@
 """Tests for the CMS database schema and seed data."""
 import pytest
 
-from db.schema import render_md
 from db.tables import (
     Collection,
     CollectionItem,
@@ -104,10 +103,3 @@ async def test_slug_history_preserved(engine):
     assert row is not None
     assert row["item"] == item_id
 
-
-# ── render_md ──────────────────────────────────────────────
-
-
-def test_render_md():
-    assert "<strong>bold</strong>" in render_md("**bold**")
-    assert "<em>italic</em>" in render_md("*italic*")

@@ -13,6 +13,7 @@ from litestar.static_files.config import StaticFilesConfig
 from litestar.template.config import TemplateConfig
 
 from db.connection import db_lifespan
+from cms.catalog import init_catalog
 from routes.admin import admin_router
 from routes.api import api_router
 from routes.media import media_router
@@ -72,3 +73,6 @@ app = Litestar(
     after_request=add_security_headers,
     debug=os.getenv("DEBUG", "false").lower() == "true",
 )
+
+# Register JinjaX extension and component globals on the shared Jinja env.
+init_catalog(app.template_engine.engine)

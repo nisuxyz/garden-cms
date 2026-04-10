@@ -3,6 +3,7 @@
 <h2>{% if page %}Edit Page{% else %}New Page{% endif %}</h2>
 
 <form
+  id="page-form"
   method="post"
   action="{% if page %}/admin/pages/{{ page.id }}/edit{% else %}/admin/pages{% endif %}"
 >
@@ -38,16 +39,24 @@
   </label>
 
   <label>
-    Body (Markdown + <code>${}</code> expressions)
-    <textarea name="body_md" rows="20">
-{{ page.body_md if page else '' }}</textarea
-    >
+    Body (Jinja template)
+    <textarea name="body" id="body-textarea" rows="20" hidden>{{ page.body if page else '' }}</textarea>
+    <div data-editor data-target="body-textarea" data-lang="django" data-preview="page-preview" class="language-django"></div>
   </label>
   <small>
-    Use <code>${site.key}</code> for content blocks,
-    <code>${collection.slug}</code> for collections,
-    <code>${media.filename}</code> for images.
+    Use <code>{{ "{{ site.key }}" }}</code> for content blocks,
+    <code>&lt;CollectionFeed slug="blog" /&gt;</code> for collections,
+    <code>{{ "{{ media_url(\"file.jpg\") }}" }}</code> for images.
   </small>
+  <iframe id="page-preview" class="preview" title="Page preview"></iframe>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      var el = document.querySelector("[data-target='body-textarea']");
+      if (el) el._previewType = "page";
+      // trigger initial preview update
+      document.getElementById('page-form').dispatchEvent(new Event('submit', { cancelable: true }));
+    });
+  </script>
 
   <fieldset>
       <label>

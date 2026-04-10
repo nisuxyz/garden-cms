@@ -38,17 +38,18 @@ admin_content %}
     %}
     <textarea
       name="field_{{ field.name }}"
+      id="field-{{ field.name }}-textarea"
       rows="10"
+      hidden
       {%
       if
       field.required
       %}required{%
       endif
       %}
-    >
-{{ item.data[field.name] if item and item.data and field.name in item.data else '' }}</textarea
-    >
-    <small>Markdown supported.</small>
+    >{{ item.data[field.name] if item and item.data and field.name in item.data else '' }}</textarea>
+    <div data-editor data-target="field-{{ field.name }}-textarea" data-lang="django"></div>
+    <small>Jinja template syntax supported.</small>
     {% elif field.type == "boolean" %}
     <input
       type="checkbox"
