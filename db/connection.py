@@ -18,7 +18,20 @@ from db.tables import Collection, ContentBlock, Page, SiteSettings, Theme
 
 _DEFAULT_THEME_TEMPLATE = """\
 {% extends "layout/base.html" %}
-{% block head %}{{ extra_head }}{% endblock %}
+{% block head %}
+  <script>
+    (function () {
+      var saved = localStorage.getItem("theme");
+      if (saved !== "light" && saved !== "dark") {
+        saved = window.matchMedia("(prefers-color-scheme: dark)").matches
+          ? "dark"
+          : "light";
+      }
+      document.documentElement.setAttribute("data-theme", saved);
+    })();
+  </script>
+  {{ extra_head }}
+{% endblock %}
 {% block body %}
 <header>
   <nav>
