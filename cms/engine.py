@@ -223,7 +223,7 @@ async def render_collection_feed(
     card_tpl = col.get("card_template", "")
     slug = col.get("slug", "")
     parts: list[str] = [
-        render_sync(card_tpl, {"item": unpack_item_data(item)})
+        render_sync(card_tpl, {"item": item})
         for item in items
     ]
     html = "\n".join(parts)

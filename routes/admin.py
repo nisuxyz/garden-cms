@@ -21,6 +21,47 @@ from cms.renderer import render, render_themed
 from cms.site_context import invalidate_site_dict
 from cms.storage import get_backend, load_backend
 from middleware.auth import admin_guard
+
+
+def _safe_json(raw: str | None, default=None):
+    """Parse a JSON string, returning *default* on failure."""
+    if default is None:
+        default = []
+    raw = (raw or "").strip() or None
+    if raw is None:
+        return default
+    try:
+        return json.loads(raw)
+    except (json.JSONDecodeError, TypeError):
+        return default
+
+
+async def _get_media_list() -> list[dict]:
+    """Return the filename/original_name pairs used by media pickers."""
+    return await (
+        MediaFile.select(MediaFile.filename, MediaFile.original_name)
+        .order_by(MediaFile.original_name)
+    )
+
+
+async def _render_preview_themed(
+    content_html: str, title: str, *, css_override: str | None = None,
+) -> str:
+    """Wrap *content_html* in the active theme, or return it bare."""
+    theme = await Theme.select().where(Theme.active.eq(True)).first()
+    if not theme:
+        return content_html
+    from cms.engine import get_nav_items, _get_site_head
+    nav = await get_nav_items()
+    site_head = await _get_site_head()
+    return await render_themed(
+        base_template=theme["base_template"],
+        css=css_override if css_override is not None else theme.get("css", ""),
+        title=title,
+        content_html=content_html,
+        nav_items=nav,
+        site_head=site_head,
+    )
 from middleware.oauth import (
     check_group_membership,
     exchange_code,
@@ -300,10 +341,7 @@ async def content_list() -> Template:
         .order_by(ContentBlock.key)
         
     )
-    media_files = await (
-        MediaFile.select(MediaFile.filename, MediaFile.original_name)
-        .order_by(MediaFile.original_name)
-    )
+    media_files = await _get_media_list()
     return Template(template_name="admin/content.html", context={"blocks": rows, "media_files": media_files})
 
 
@@ -396,10 +434,7 @@ async def collections_create(
     empty_template = (data.get("empty_template") or "").strip()
     items_per_page = int(data.get("items_per_page") or 10)
 
-    try:
-        fields_schema = json.loads(fields_schema_raw)
-    except json.JSONDecodeError:
-        fields_schema = []
+    fields_schema = _safe_json(fields_schema_raw)
 
     await Collection(
         name=name,
@@ -440,10 +475,7 @@ async def collections_update(
     empty_template = (data.get("empty_template") or "").strip()
     items_per_page = int(data.get("items_per_page") or 10)
 
-    try:
-        fields_schema = json.loads(fields_schema_raw)
-    except json.JSONDecodeError:
-        fields_schema = []
+    fields_schema = _safe_json(fields_schema_raw)
 
     await Collection.update(
         {
@@ -504,7 +536,7 @@ async def items_new(col_id: int) -> Template:
     if not col:
         raise NotFoundException()
     if isinstance(col["fields_schema"], str):
-        col["fields_schema"] = json.loads(col["fields_schema"])
+        col["fields_schema"] = _safe_json(col["fields_schema"])
     return Template(
         template_name="admin/item_edit.html",
         context={"collection": col, "item": None},
@@ -529,7 +561,7 @@ async def items_create(
     # Build data dict from fields_schema.
     fields_schema = col.get("fields_schema", [])
     if isinstance(fields_schema, str):
-        fields_schema = json.loads(fields_schema)
+        fields_schema = _safe_json(fields_schema)
     item_data = {}
     for field_def in fields_schema:
         fname = field_def["name"]
@@ -562,9 +594,9 @@ async def items_edit(col_id: int, item_id: int) -> Template:
     if not item:
         raise NotFoundException()
     if isinstance(col["fields_schema"], str):
-        col["fields_schema"] = json.loads(col["fields_schema"])
+        col["fields_schema"] = _safe_json(col["fields_schema"])
     if isinstance(item.get("data"), str):
-        item["data"] = json.loads(item["data"]) if item["data"] else {}
+        item["data"] = _safe_json(item["data"], default={})
     return Template(
         template_name="admin/item_edit.html",
         context={"collection": col, "item": item},
@@ -597,7 +629,7 @@ async def items_update(
 
     fields_schema = col.get("fields_schema", [])
     if isinstance(fields_schema, str):
-        fields_schema = json.loads(fields_schema)
+        fields_schema = _safe_json(fields_schema)
     item_data = {}
     for field_def in fields_schema:
         fname = field_def["name"]
@@ -702,10 +734,7 @@ async def _get_settings_dict() -> dict[str, str]:
 @get("/settings")
 async def settings_page() -> Template:
     settings = await _get_settings_dict()
-    media_files = await (
-        MediaFile.select(MediaFile.filename, MediaFile.original_name)
-        .order_by(MediaFile.original_name)
-    )
+    media_files = await _get_media_list()
     return Template(
         template_name="admin/settings.html",
         context={"settings": settings, "saved": False, "error": None, "media_files": media_files, "css_frameworks": CSS_FRAMEWORKS},
@@ -743,10 +772,7 @@ async def settings_save(
 
     return Template(
         template_name="admin/settings.html",
-        context={"settings": settings, "saved": error is None, "error": error, "css_frameworks": CSS_FRAMEWORKS, "media_files": await (
-            MediaFile.select(MediaFile.filename, MediaFile.original_name)
-            .order_by(MediaFile.original_name)
-        )},
+        context={"settings": settings, "saved": error is None, "error": error, "css_frameworks": CSS_FRAMEWORKS, "media_files": await _get_media_list()},
     )
 
 
@@ -930,64 +956,18 @@ async def preview(
         }
 
         if preview_type == "page":
-            # Render as a page body with full theme wrapping.
             content_html = await render(source)
-            theme = await Theme.select().where(Theme.active.eq(True)).first()
-            if theme:
-                from cms.engine import get_nav_items, _get_site_head
-                nav = await get_nav_items()
-                site_head = await _get_site_head()
-                html = await render_themed(
-                    base_template=theme["base_template"],
-                    css=theme.get("css", ""),
-                    title="Preview",
-                    content_html=content_html,
-                    nav_items=nav,
-                    site_head=site_head,
-                )
-            else:
-                html = content_html
+            html = await _render_preview_themed(content_html, "Preview")
 
         elif preview_type == "card":
-            # Render card template with sample item data + theme wrapping.
             content_html = await render(source, {"item": _sample_item})
-            theme = await Theme.select().where(Theme.active.eq(True)).first()
-            if theme:
-                from cms.engine import get_nav_items, _get_site_head
-                nav = await get_nav_items()
-                site_head = await _get_site_head()
-                html = await render_themed(
-                    base_template=theme["base_template"],
-                    css=theme.get("css", ""),
-                    title="Card Preview",
-                    content_html=content_html,
-                    nav_items=nav,
-                    site_head=site_head,
-                )
-            else:
-                html = content_html
+            html = await _render_preview_themed(content_html, "Card Preview")
 
         elif preview_type == "detail":
-            # Render detail template with sample item data + theme wrapping.
             content_html = await render(source, {"item": _sample_item})
-            theme = await Theme.select().where(Theme.active.eq(True)).first()
-            if theme:
-                from cms.engine import get_nav_items, _get_site_head
-                nav = await get_nav_items()
-                site_head = await _get_site_head()
-                html = await render_themed(
-                    base_template=theme["base_template"],
-                    css=theme.get("css", ""),
-                    title="Preview",
-                    content_html=content_html,
-                    nav_items=nav,
-                    site_head=site_head,
-                )
-            else:
-                html = content_html
+            html = await _render_preview_themed(content_html, "Preview")
 
         elif preview_type == "theme":
-            # Render as a base template with sample content.
             html = await render_themed(
                 base_template=source,
                 css="",
@@ -997,7 +977,6 @@ async def preview(
             )
 
         elif preview_type == "css":
-            # Render active theme with this CSS.
             theme = await Theme.select().where(Theme.active.eq(True)).first()
             if theme:
                 html = await render_themed(
@@ -1011,7 +990,6 @@ async def preview(
                 html = f"<style>{source}</style><p>No active theme.</p>"
 
         else:
-            # Default: just render as template string.
             html = await render(source)
 
     except Exception as exc:

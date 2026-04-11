@@ -7,7 +7,6 @@ to register the JinjaX extension, component folder, and template globals.
 from __future__ import annotations
 
 import asyncio
-import json
 from contextvars import ContextVar
 from pathlib import Path
 from typing import Any
@@ -42,18 +41,6 @@ def provide_catalog() -> jinjax.Catalog:
 # ── Collection data access ─────────────────────────────────
 
 
-def _unpack_items(rows: list[dict]) -> list[dict[str, Any]]:
-    """Unpack JSON ``data`` fields into top-level keys on each row."""
-    for item in rows:
-        data = item.get("data", {})
-        if isinstance(data, str):
-            data = json.loads(data) if data else {}
-        for k, v in data.items():
-            if k not in item:
-                item[k] = v
-    return rows
-
-
 async def fetch_collection_async(
     slug: str, page: int = 1, limit: int | None = None,
 ) -> dict[str, Any]:
@@ -83,7 +70,7 @@ async def fetch_collection_async(
         .limit(per_page + 1)
     )
     has_more = len(rows) > per_page
-    items = _unpack_items(rows[:per_page])
+    items = [_renderer.unpack_item_data(r) for r in rows[:per_page]]
 
     return {
         "collection": col,
