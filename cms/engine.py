@@ -9,10 +9,10 @@ High-level CMS page processing pipeline.
 """
 from __future__ import annotations
 
-import json
 from typing import Any
 
-from cms.renderer import render_card, render_template_string, render_template_string_async, render_theme
+from cms.catalog import fetch_collection_async
+from cms.renderer import render, render_sync, render_themed, unpack_item_data
 from db.tables import (
     Collection,
     CollectionItem,
@@ -87,14 +87,8 @@ async def render_page(page: dict[str, Any]) -> str:
 
     Returns a complete HTML document string.
     """
-    # 1. Render the page body as a Jinja template string.
-    #    JinjaX components like <CollectionFeed slug="blog" /> and
-    #    globals like {{ site.hero_headline }} are resolved here.
-    #    Uses the async version so the sync Jinja render runs in a thread,
-    #    keeping the main loop free for DB queries from components.
-    content_html = await render_template_string_async(page["body"])
+    content_html = await render(page["body"])
 
-    # 2. Wrap in theme.
     theme = None
     if page.get("theme"):
         theme = (
@@ -110,7 +104,7 @@ async def render_page(page: dict[str, Any]) -> str:
     nav = await get_nav_items()
     site_head = await _get_site_head()
 
-    return render_theme(
+    return await render_themed(
         base_template=theme["base_template"],
         css=theme.get("css", ""),
         title=page["title"],
@@ -187,16 +181,8 @@ async def render_item(
     if not detail_tpl:
         detail_tpl = "<h1>{{ item.title }}</h1>\n{{ item.body }}"
 
-    # Unpack JSON data fields into top-level for template access.
-    data = item.get("data", {})
-    if isinstance(data, str):
-        data = json.loads(data) if data else {}
-    merged = {**item}
-    for k, v in data.items():
-        if k not in merged:
-            merged[k] = v
-
-    content_html = await render_template_string_async(detail_tpl, {"item": merged})
+    merged = unpack_item_data(item)
+    content_html = await render(detail_tpl, {"item": merged})
 
     theme = await get_active_theme()
     if theme is None:
@@ -204,7 +190,7 @@ async def render_item(
 
     nav = await get_nav_items()
     site_head = await _get_site_head()
-    return render_theme(
+    return await render_themed(
         base_template=theme["base_template"],
         css=theme.get("css", ""),
         title=item.get("title", ""),
@@ -223,39 +209,27 @@ async def render_collection_feed(
     """Return rendered card HTML for page *page* of a collection.
 
     Returns ``None`` if the collection doesn't exist.
+    Uses the shared ``fetch_collection_async`` for data access.
     """
-    col = (
-        await Collection.select()
-        .where(Collection.slug == collection_slug)
-        .first()
-    )
+    result = await fetch_collection_async(collection_slug, page=page)
+    col = result["collection"]
     if col is None:
         return None
 
-    per_page = col.get("items_per_page", 10)
-    offset = (page - 1) * per_page
-
-    rows = await (
-        CollectionItem.select()
-        .where(CollectionItem.collection == col["id"])
-        .where(CollectionItem.published.eq(True))
-        .order_by(CollectionItem.created_at, ascending=False)
-        .offset(offset)
-        .limit(per_page + 1)
-    )
-    has_more = len(rows) > per_page
-    items = rows[:per_page]
-
+    items = result["items"]
     if not items:
         return col.get("empty_template", "")
 
     card_tpl = col.get("card_template", "")
     slug = col.get("slug", "")
-    parts: list[str] = [render_card(card_tpl, item) for item in items]
+    parts: list[str] = [
+        render_sync(card_tpl, {"item": unpack_item_data(item)})
+        for item in items
+    ]
     html = "\n".join(parts)
 
-    if has_more:
-        next_page = page + 1
+    if result["has_more"]:
+        next_page = result["next_page"]
         html += (
             f'\n<button hx-get="/api/collection/{slug}/feed?page={next_page}" '
             f'hx-swap="outerHTML" hx-target="this">Load more</button>'

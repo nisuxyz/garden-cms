@@ -17,7 +17,7 @@ from litestar.response import Redirect, Response, Template
 from db.tables import Collection, CollectionItem, CollectionItemSlugHistory, ContentBlock, MediaFile, Page, SiteSettings, Theme
 from cms.css_frameworks import CSS_FRAMEWORKS
 from cms.media import MediaError, delete_media, save_upload
-from cms.renderer import render_template_string, render_theme
+from cms.renderer import render, render_themed
 from cms.site_context import invalidate_site_dict
 from cms.storage import get_backend, load_backend
 from middleware.auth import admin_guard
@@ -931,13 +931,13 @@ async def preview(
 
         if preview_type == "page":
             # Render as a page body with full theme wrapping.
-            content_html = render_template_string(source)
+            content_html = await render(source)
             theme = await Theme.select().where(Theme.active.eq(True)).first()
             if theme:
                 from cms.engine import get_nav_items, _get_site_head
                 nav = await get_nav_items()
                 site_head = await _get_site_head()
-                html = render_theme(
+                html = await render_themed(
                     base_template=theme["base_template"],
                     css=theme.get("css", ""),
                     title="Preview",
@@ -950,13 +950,13 @@ async def preview(
 
         elif preview_type == "card":
             # Render card template with sample item data + theme wrapping.
-            content_html = render_template_string(source, {"item": _sample_item})
+            content_html = await render(source, {"item": _sample_item})
             theme = await Theme.select().where(Theme.active.eq(True)).first()
             if theme:
                 from cms.engine import get_nav_items, _get_site_head
                 nav = await get_nav_items()
                 site_head = await _get_site_head()
-                html = render_theme(
+                html = await render_themed(
                     base_template=theme["base_template"],
                     css=theme.get("css", ""),
                     title="Card Preview",
@@ -969,13 +969,13 @@ async def preview(
 
         elif preview_type == "detail":
             # Render detail template with sample item data + theme wrapping.
-            content_html = render_template_string(source, {"item": _sample_item})
+            content_html = await render(source, {"item": _sample_item})
             theme = await Theme.select().where(Theme.active.eq(True)).first()
             if theme:
                 from cms.engine import get_nav_items, _get_site_head
                 nav = await get_nav_items()
                 site_head = await _get_site_head()
-                html = render_theme(
+                html = await render_themed(
                     base_template=theme["base_template"],
                     css=theme.get("css", ""),
                     title="Preview",
@@ -988,7 +988,7 @@ async def preview(
 
         elif preview_type == "theme":
             # Render as a base template with sample content.
-            html = render_theme(
+            html = await render_themed(
                 base_template=source,
                 css="",
                 title="Theme Preview",
@@ -1000,7 +1000,7 @@ async def preview(
             # Render active theme with this CSS.
             theme = await Theme.select().where(Theme.active.eq(True)).first()
             if theme:
-                html = render_theme(
+                html = await render_themed(
                     base_template=theme["base_template"],
                     css=source,
                     title="CSS Preview",
@@ -1012,7 +1012,7 @@ async def preview(
 
         else:
             # Default: just render as template string.
-            html = render_template_string(source)
+            html = await render(source)
 
     except Exception as exc:
         html = f"<pre style='color:red'>{exc!s}</pre>"

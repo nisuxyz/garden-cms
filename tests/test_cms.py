@@ -2,7 +2,7 @@
 """Tests for the CMS rendering pipeline (site context + Jinja templates)."""
 import pytest
 
-from cms.renderer import render_card, render_template_string
+from cms.renderer import render_sync, unpack_item_data
 from cms.site_context import _site_dict, get_site_dict, load_site_dict
 from db.tables import ContentBlock
 
@@ -43,18 +43,18 @@ async def test_site_dict_image_block(engine):
 # ── Template string rendering ──────────────────────────────
 
 
-def test_render_template_string_basic():
-    result = render_template_string("<p>{{ name }}</p>", {"name": "World"})
+def test_render_sync_basic():
+    result = render_sync("<p>{{ name }}</p>", {"name": "World"})
     assert "<p>World</p>" in result
 
 
-def test_render_template_string_empty():
-    result = render_template_string("")
+def test_render_sync_empty():
+    result = render_sync("")
     assert result == ""
 
 
-def test_render_template_string_no_context():
-    result = render_template_string("<p>Hello</p>")
+def test_render_sync_no_context():
+    result = render_sync("<p>Hello</p>")
     assert "<p>Hello</p>" in result
 
 
@@ -64,14 +64,16 @@ def test_render_template_string_no_context():
 def test_render_card_basic():
     tpl = '<article><h3>{{ item.title }}</h3></article>'
     item = {"title": "My Post", "slug": "my-post", "data": {}}
-    result = render_card(tpl, item)
+    merged = unpack_item_data(item)
+    result = render_sync(tpl, {"item": merged})
     assert "<h3>My Post</h3>" in result
 
 
 def test_render_card_with_data_fields():
     tpl = '<p>{{ item.summary }}</p>'
     item = {"title": "Post", "data": {"summary": "A summary"}}
-    result = render_card(tpl, item)
+    merged = unpack_item_data(item)
+    result = render_sync(tpl, {"item": merged})
     assert "A summary" in result
 
 
@@ -79,5 +81,6 @@ def test_render_card_json_string_data():
     import json
     tpl = '<p>{{ item.tags }}</p>'
     item = {"title": "Post", "data": json.dumps({"tags": "a, b, c"})}
-    result = render_card(tpl, item)
+    merged = unpack_item_data(item)
+    result = render_sync(tpl, {"item": merged})
     assert "a, b, c" in result

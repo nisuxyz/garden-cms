@@ -19,7 +19,7 @@ _site_dict: dict[str, str] = {}
 
 async def load_site_dict() -> None:
     """Query all ContentBlocks and populate ``_site_dict``."""
-    from cms.renderer import render_template_string
+    from cms.renderer import render_sync
 
     rows = await ContentBlock.select()
     new: dict[str, str] = {}
@@ -34,7 +34,7 @@ async def load_site_dict() -> None:
             # Render through Jinja so media_url() etc. resolve.
             # Wrap in Markup so {{ site.key }} won't be auto-escaped.
             try:
-                new[key] = Markup(render_template_string(value))
+                new[key] = Markup(render_sync(value))
             except Exception:
                 new[key] = Markup(value)
         else:
