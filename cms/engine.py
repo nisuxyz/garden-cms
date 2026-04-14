@@ -13,6 +13,8 @@ from typing import Any
 
 from cms.catalog import fetch_collection_async
 from cms.renderer import render, render_sync, render_themed, unpack_item_data
+from cms.site_context import ensure_fresh_site_dict
+from cms.storage import ensure_fresh_backend
 from db.tables import (
     Collection,
     CollectionItem,
@@ -87,6 +89,8 @@ async def render_page(page: dict[str, Any]) -> str:
 
     Returns a complete HTML document string.
     """
+    await ensure_fresh_backend()
+    await ensure_fresh_site_dict()
     content_html = await render(page["body"])
 
     theme = None
@@ -177,6 +181,8 @@ async def render_item(
 
     Pipeline: render detail_template as Jinja with ``item`` context → theme.
     """
+    await ensure_fresh_backend()
+    await ensure_fresh_site_dict()
     detail_tpl = collection.get("detail_template", "")
     if not detail_tpl:
         detail_tpl = "<h1>{{ item.title }}</h1>\n{{ item.body }}"
@@ -211,6 +217,8 @@ async def render_collection_feed(
     Returns ``None`` if the collection doesn't exist.
     Uses the shared ``fetch_collection_async`` for data access.
     """
+    await ensure_fresh_backend()
+    await ensure_fresh_site_dict()
     result = await fetch_collection_async(collection_slug, page=page)
     col = result["collection"]
     if col is None:

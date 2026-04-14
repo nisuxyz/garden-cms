@@ -218,3 +218,18 @@ def get_backend() -> StorageBackend:
         else:
             _backend = LocalStorageBackend()
     return _backend
+
+
+async def ensure_fresh_backend() -> None:
+    """Reload the storage backend from DB settings when running stateless.
+
+    In stateful mode (``STATELESS`` env-var unset) this is a no-op — the
+    backend is initialised once at startup and only rebuilt on admin
+    settings save.  In stateless mode the backend is rebuilt from
+    database settings on every call so that configuration changes made by
+    another instance take effect immediately.
+    """
+    from cms.site_context import STATELESS
+
+    if STATELESS:
+        await load_backend()

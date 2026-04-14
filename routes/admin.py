@@ -18,7 +18,7 @@ from db.tables import Collection, CollectionItem, CollectionItemSlugHistory, Con
 from cms.css_frameworks import CSS_FRAMEWORKS
 from cms.media import MediaError, delete_media, save_upload
 from cms.renderer import render, render_themed
-from cms.site_context import invalidate_site_dict
+from cms.site_context import STATELESS, invalidate_site_dict
 from cms.storage import get_backend, load_backend
 from middleware.auth import admin_guard
 
@@ -737,7 +737,7 @@ async def settings_page() -> Template:
     media_files = await _get_media_list()
     return Template(
         template_name="admin/settings.html",
-        context={"settings": settings, "saved": False, "error": None, "media_files": media_files, "css_frameworks": CSS_FRAMEWORKS},
+        context={"settings": settings, "saved": False, "error": None, "media_files": media_files, "css_frameworks": CSS_FRAMEWORKS, "stateless": STATELESS},
     )
 
 
@@ -772,7 +772,7 @@ async def settings_save(
 
     return Template(
         template_name="admin/settings.html",
-        context={"settings": settings, "saved": error is None, "error": error, "css_frameworks": CSS_FRAMEWORKS, "media_files": await _get_media_list()},
+        context={"settings": settings, "saved": error is None, "error": error, "css_frameworks": CSS_FRAMEWORKS, "media_files": await _get_media_list(), "stateless": STATELESS},
     )
 
 

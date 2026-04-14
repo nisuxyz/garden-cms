@@ -3,18 +3,28 @@ In-memory cache for ContentBlock key/value pairs.
 
 All ContentBlocks are loaded at startup and kept in a module-level dict.
 CRUD operations call ``invalidate_site_dict()`` to refresh the cache.
-The cache is intentionally simple — ContentBlocks are small KV pairs.
 
 HTML blocks are rendered through Jinja so ``{{ media_url("file") }}``
 and other globals resolve at cache-load time.
+
+Stateless mode
+──────────────
+Set the ``STATELESS`` environment variable to ``true`` (or ``1`` / ``yes``)
+to reload content blocks from the database before every page render.
+This avoids stale in-memory state in serverless or multi-instance
+deployments where each request may hit a different process.
 """
 from __future__ import annotations
+
+import os
 
 from cms.storage import get_backend
 from db.tables import ContentBlock
 from markupsafe import Markup
 
 _site_dict: dict[str, str] = {}
+
+STATELESS: bool = os.getenv("STATELESS", "").lower() in ("1", "true", "yes")
 
 
 async def load_site_dict() -> None:
@@ -31,8 +41,6 @@ async def load_site_dict() -> None:
         if block_type == "image" and value:
             new[key] = backend.url(value)
         elif block_type == "html" and value:
-            # Render through Jinja so media_url() etc. resolve.
-            # Wrap in Markup so {{ site.key }} won't be auto-escaped.
             try:
                 new[key] = Markup(render_sync(value))
             except Exception:
@@ -42,6 +50,17 @@ async def load_site_dict() -> None:
     # Mutate in-place so Jinja globals keep a live reference.
     _site_dict.clear()
     _site_dict.update(new)
+
+
+async def ensure_fresh_site_dict() -> None:
+    """Reload ``_site_dict`` from the database when running stateless.
+
+    Call this before rendering a public page.  In stateful mode (the
+    default) this is a no-op — the dict stays current via startup load
+    and CRUD invalidation.
+    """
+    if STATELESS:
+        await load_site_dict()
 
 
 async def invalidate_site_dict() -> None:

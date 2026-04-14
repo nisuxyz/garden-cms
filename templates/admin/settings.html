@@ -151,6 +151,21 @@ block admin_content %}
     <small>HTML injected into <code>&lt;head&gt;</code> on the public site (e.g. stylesheet links, meta tags). Admin always uses Pico.</small>
   </label>
 
+  <h3>Performance</h3>
+
+  <p>
+    <strong>Stateless mode:</strong>
+    {% if stateless %}
+    <ins>active</ins>
+    <br />
+    <small>The <code>STATELESS</code> environment variable is set. Content blocks and storage settings are reloaded from the database on every request. This is appropriate for serverless and multi-instance deployments.</small>
+    {% else %}
+    <del>inactive</del>
+    <br />
+    <small>Content blocks and storage settings are cached in memory and refreshed on save. Set the <code>STATELESS</code> environment variable to <code>true</code> to reload from the database on every request (recommended for serverless deployments).</small>
+    {% endif %}
+  </p>
+
   <button type="submit">Save Settings</button>
 </form>
 {% endblock %}
