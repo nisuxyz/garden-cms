@@ -224,7 +224,7 @@ async def pages_create(
     published = data.get("published") == "on"
 
     # Auto-assign nav_order to end of list.
-    max_row = await Page.raw("SELECT COALESCE(MAX(nav_order), -1) AS mx FROM page")
+    max_row = await Page.raw("SELECT COALESCE(MAX(nav_order), -1) AS mx FROM pages")
     nav_order = (max_row[0]["mx"] if max_row else 0) + 1
 
     if is_homepage:
@@ -777,6 +777,52 @@ async def settings_save(
     )
 
 
+# ── Markdown Mounts ────────────────────────────────────────
+
+@get("/md-mounts")
+async def md_mounts_page() -> Template:
+    from cms.markdown import discover_md_dirs, list_md_routes, load_md_mounts
+
+    mounts = await load_md_mounts()
+    dir_names = discover_md_dirs()
+    dirs = []
+    for name in dir_names:
+        slug = mounts.get(name, "")
+        routes = list_md_routes(name)
+        dirs.append({"name": name, "slug": slug, "routes": routes})
+    return Template(
+        template_name="admin/md_mounts.html",
+        context={"dirs": dirs, "saved": False},
+    )
+
+
+@post("/md-mounts")
+async def md_mounts_save(
+    data: Annotated[dict, Body(media_type=RequestEncodingType.URL_ENCODED)],
+) -> Template:
+    from cms.markdown import discover_md_dirs, list_md_routes, load_md_mounts, save_md_mounts
+
+    mounts: dict[str, str] = {}
+    dir_names = discover_md_dirs()
+    for name in dir_names:
+        slug = (data.get(f"slug__{name}") or "").strip().strip("/")
+        if slug:
+            mounts[name] = slug
+
+    await save_md_mounts(mounts)
+
+    # Re-fetch for display.
+    dirs = []
+    for name in dir_names:
+        slug = mounts.get(name, "")
+        routes = list_md_routes(name)
+        dirs.append({"name": name, "slug": slug, "routes": routes})
+    return Template(
+        template_name="admin/md_mounts.html",
+        context={"dirs": dirs, "saved": True},
+    )
+
+
 # ── Media ──────────────────────────────────────────────────
 
 @get("/media")
@@ -1022,6 +1068,7 @@ _guarded_handlers = [
     collections_update, collections_delete,
     items_list, items_new, items_create, items_edit, items_update, items_reorder, items_delete,
     media_list, media_upload, media_delete,
+    md_mounts_page, md_mounts_save,
     settings_page, settings_save,
     themes_list, themes_new, themes_create, themes_edit, themes_update,
     themes_activate, themes_delete,

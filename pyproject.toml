@@ -1,7 +1,7 @@
 [project]
-name = "itsnisuxyz-garden"
+name = "garden-cms"
 version = "0.2.0"
-description = "Personal site to showcase life. Written in python. (litestar + piccolo + postgres)"
+description = "DB backed dynamic content management system"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
@@ -15,6 +15,7 @@ dependencies = [
     "authlib>=1.3.0",
     "aioboto3>=15.5.0",
     "jinjax>=0.63",
+    "markdown>=3.7",
     "syncwrap>=0.0.1",
 ]
 

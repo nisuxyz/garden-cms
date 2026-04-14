@@ -16,12 +16,14 @@ from litestar.response import Redirect
 
 from cms.engine import (
     render_item,
+    render_md_page,
     render_page,
     resolve_collection_item,
     resolve_homepage,
     resolve_page,
     resolve_slug_redirect,
 )
+from cms.markdown import load_md_mounts, resolve_md_file
 from cms.storage import get_backend
 from db.tables import Collection, SiteSettings
 
@@ -66,6 +68,23 @@ async def dynamic_page(slug: str) -> Response | Redirect:
     #    Check if there's a Page whose slug matches the collection slug.
     #    (Collections themselves don't have standalone pages — they're
     #     embedded in Pages via <CollectionFeed /> components.)
+
+    # 5. Try matching a markdown mount.
+    mounts = await load_md_mounts()
+    # Build reverse lookup: slug_prefix → dir_name
+    slug_to_dir = {v: k for k, v in mounts.items()}
+    # Check if any mount prefix matches.
+    for prefix, dir_name in slug_to_dir.items():
+        if slug == prefix or slug.startswith(prefix + "/"):
+            sub_path = slug[len(prefix):].strip("/")
+            if not sub_path:
+                # Bare mount URL (e.g. /docs) — try index.md
+                sub_path = "index"
+            result = resolve_md_file(dir_name, sub_path)
+            if result is not None:
+                title, content_html, layout_source = result
+                html = await render_md_page(content_html, title, layout_source)
+                return Response(content=html, media_type="text/html")
 
     raise NotFoundException(detail="Page not found")
 

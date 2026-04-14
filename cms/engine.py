@@ -11,6 +11,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from markupsafe import Markup
+
 from cms.catalog import fetch_collection_async
 from cms.renderer import render, render_sync, render_themed, unpack_item_data
 from cms.site_context import ensure_fresh_site_dict
@@ -217,6 +219,47 @@ async def render_item(
         base_template=theme["base_template"],
         css=theme.get("css", ""),
         title=item.get("title", ""),
+        content_html=content_html,
+        nav_items=nav,
+        site_head=site_head,
+        logo=logo,
+    )
+
+
+# ── Markdown file page ────────────────────────────────────
+
+
+async def render_md_page(
+    content_html: str, title: str, layout_source: str | None = None,
+) -> str:
+    """Render pre-converted markdown HTML through the active theme.
+
+    If *layout_source* is provided (a Jinja2 template string from a
+    ``_layout.jinja`` file), the markdown HTML is first rendered inside
+    that layout via a ``{{ content }}`` variable before being wrapped
+    in the theme.
+    """
+    await ensure_fresh_backend()
+    await ensure_fresh_site_dict()
+
+    # Render through the markdown layout if one was found.
+    if layout_source:
+        content_html = await render(
+            layout_source, {"content": Markup(content_html), "title": title},
+        )
+
+    theme = await get_active_theme()
+    if theme is None:
+        return content_html
+
+    nav = await get_nav_items()
+    site_head = await _get_site_head()
+    logo = await _get_logo_url()
+
+    return await render_themed(
+        base_template=theme["base_template"],
+        css=theme.get("css", ""),
+        title=title,
         content_html=content_html,
         nav_items=nav,
         site_head=site_head,

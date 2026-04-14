@@ -1,0 +1,69 @@
+{% extends "layout/admin.html" %} {% block title %}Markdown Mounts{% endblock %}
+{% block admin_content %}
+<hgroup>
+  <h2>Markdown Mounts</h2>
+  <p>Map directories under <code>data/md/</code> to public URL routes.</p>
+</hgroup>
+
+{% if saved %}
+<p><ins>Mounts saved.</ins></p>
+{% endif %} {% if dirs %}
+<form method="post" action="/admin/md-mounts">
+  <table>
+    <thead>
+      <tr>
+        <th>Directory</th>
+        <th>Route slug</th>
+        <th>Files</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for dir in dirs %}
+      <tr>
+        <td><code>data/md/{{ dir.name }}/</code></td>
+        <td>
+          <input
+            type="text"
+            name="slug__{{ dir.name }}"
+            value="{{ dir.slug }}"
+            placeholder="e.g. {{ dir.name }}"
+          />
+          <small
+            >Leave blank to unmount. Routes will be served at
+            <code>/&lt;slug&gt;/&lt;path&gt;</code>.</small
+          >
+        </td>
+        <td>
+          {% if dir.routes %}
+          <details>
+            <summary>
+              {{ dir.routes | length }} page{{ 's' if dir.routes | length != 1
+              }}
+            </summary>
+            <ul>
+              {% for route in dir.routes %}
+              <li>
+                <code
+                  >{% if dir.slug %}/{{ dir.slug }}/{{ route }}{% else
+                  %}/&lt;slug&gt;/{{ route }}{% endif %}</code
+                >
+              </li>
+              {% endfor %}
+            </ul>
+          </details>
+          {% else %}
+          <small>No .md files</small>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <button type="submit">Save Mounts</button>
+</form>
+{% else %}
+<p>
+  No directories found under <code>data/md/</code>. Create a subdirectory with
+  <code>.md</code> files to get started.
+</p>
+{% endif %} {% endblock %}
