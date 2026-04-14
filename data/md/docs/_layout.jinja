@@ -1,0 +1,93 @@
+<style>
+  /* Two-column admin layout */
+  #docs-main {
+    display: grid;
+    grid-template-columns: 12rem 1fr;
+    gap: 2rem;
+    align-items: start;
+  }
+
+  /* Sidebar */
+  aside nav ul {
+    list-style: none;
+    padding: 0;
+  }
+  aside nav li {
+    margin-bottom: 0.25rem;
+  }
+  aside nav a,
+  aside form button {
+    all: unset;
+    display: block;
+    padding: 0.4rem 0.75rem;
+    border-radius: var(--pico-border-radius);
+    font-size: 0.9rem;
+    cursor: pointer;
+  }
+  aside nav a:hover,
+  aside form button:hover {
+    background: var(--pico-card-background-color);
+  }
+  aside form {
+    margin: 0;
+  }
+</style>
+<main id="docs-main">
+  <aside class="sticky-top">
+    <span
+      style="
+        font-size: 0.85rem;
+        margin-bottom: 2rem;
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+      "
+    >
+      <a href="/docs">Docs</a>
+      &rsaquo;
+      <strong>{{ title }}</strong>
+    </span>
+    <hr />
+    <nav>
+      <ul>
+        <li>
+          <a href="/docs/installation">Installation</a>
+        </li>
+        <li>
+          <a href="/docs/getting-started">Getting Started</a>
+        </li>
+        <li>
+          <a href="/docs/pages">Pages</a>
+        </li>
+        <li>
+          <a href="/docs/content-blocks">Content Blocks</a>
+        </li>
+        <li>
+          <a href="/docs/collections">Collections</a>
+        </li>
+        <li>
+          <a href="/docs/themes">Themes</a>
+        </li>
+        <li>
+          <a href="/docs/media">Media</a>
+        </li>
+        <li>
+          <a href="/docs/markdown-mounts">Markdown Mounts</a>
+        </li>
+        <li>
+          <a href="/docs/templates">Templates</a>
+        </li>
+        <li>
+          <a href="/docs/authentication">Authentication</a>
+        </li>
+        <li>
+          <a href="/docs/deployment">Deployment</a>
+        </li>
+        <li>
+          <a href="/docs/configuration">Configuration</a>
+        </li>
+      </ul>
+    </nav>
+  </aside>
+  <article>{{ content }}</article>
+</main>
