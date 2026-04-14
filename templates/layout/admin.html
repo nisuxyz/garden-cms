@@ -24,34 +24,24 @@ head %}
   /* Two-column admin layout */
   main {
     display: grid;
-    grid-template-columns: 12rem 1fr;
+    grid-template-columns: 12rem minmax(0, 1fr);
     gap: 2rem;
     align-items: start;
   }
 
-  /* Sidebar */
-  aside nav ul {
-    list-style: none;
-    padding: 0;
+  /* Critical for grid overflow: let content column shrink */
+  main > section,
+  main > section form,
+  main > section article {
+    min-width: 0;
   }
-  aside nav li {
-    margin-bottom: 0.25rem;
-  }
-  aside nav a,
-  aside form button {
-    all: unset;
-    display: block;
-    padding: 0.4rem 0.75rem;
-    border-radius: var(--pico-border-radius);
-    font-size: 0.9rem;
-    cursor: pointer;
-  }
-  aside nav a:hover,
-  aside form button:hover {
-    background: var(--pico-card-background-color);
-  }
-  aside form {
-    margin: 0;
+
+  /* Keep wide editor / preview content from forcing page width */
+  [data-editor],
+  iframe.preview {
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
   }
 
   /* Compact table controls */

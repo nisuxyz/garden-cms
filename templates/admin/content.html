@@ -127,8 +127,8 @@
     {% else %}
     <input type="text" name="value" value="{{ block.value }}" />
     {% endif %}
-    <footer>
-      <button type="submit" id="save-btn-{{ block.id }}">Save</button>
+    <footer style="margin-top: 0.5rem;">
+      <button type="submit" id="save-btn-{{ block.id }}" style="margin-bottom: 0;">Save</button>
       <button
         hx-post="/admin/content/{{ block.id }}/delete"
         hx-target="#block-{{ block.id }}"
