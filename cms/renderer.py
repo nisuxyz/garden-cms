@@ -89,6 +89,7 @@ async def render_themed(
     content_html: str,
     nav_items: list[dict[str, str]],
     site_head: str | None = None,
+    logo: str | None = None,
 ) -> str:
     """Wrap *content_html* in a theme's base template.
 
@@ -100,6 +101,7 @@ async def render_themed(
         "content": Markup(content_html),
         "nav_items": nav_items,
         "extra_head": extra_head,
+        "logo": logo,
     }
     if site_head:
         ctx["extra_admin_head"] = Markup(site_head)

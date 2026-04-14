@@ -84,6 +84,20 @@ async def _get_site_head() -> str | None:
     return val or None
 
 
+async def _get_logo_url() -> str | None:
+    """Load the logo setting and return its public media URL."""
+    row = await (
+        SiteSettings.select(SiteSettings.value)
+        .where(SiteSettings.key == "logo")
+        .first()
+    )
+    filename = (row.get("value", "") or "") if row else ""
+    if not filename:
+        return None
+    from cms.catalog import _media_url
+    return _media_url(filename)
+
+
 async def render_page(page: dict[str, Any]) -> str:
     """Full pipeline: render body as Jinja template → wrap in theme.
 
@@ -107,6 +121,7 @@ async def render_page(page: dict[str, Any]) -> str:
 
     nav = await get_nav_items()
     site_head = await _get_site_head()
+    logo = await _get_logo_url()
 
     return await render_themed(
         base_template=theme["base_template"],
@@ -115,6 +130,7 @@ async def render_page(page: dict[str, Any]) -> str:
         content_html=content_html,
         nav_items=nav,
         site_head=site_head,
+        logo=logo,
     )
 
 
@@ -196,6 +212,7 @@ async def render_item(
 
     nav = await get_nav_items()
     site_head = await _get_site_head()
+    logo = await _get_logo_url()
     return await render_themed(
         base_template=theme["base_template"],
         css=theme.get("css", ""),
@@ -203,6 +220,7 @@ async def render_item(
         content_html=content_html,
         nav_items=nav,
         site_head=site_head,
+        logo=logo,
     )
 
 

@@ -37,23 +37,23 @@ block admin_content %}
 
   <div id="s3-fields" {% if settings.storage_backend !="s3" %}hidden{% endif %}>
     <label>
-        Bucket
-        <input
-          type="text"
-          name="s3_bucket"
-          value="{{ settings.s3_bucket }}"
-          placeholder="my-media-bucket"
-        />
-      </label>
-      <label>
-        Region
-        <input
-          type="text"
-          name="s3_region"
-          value="{{ settings.s3_region }}"
-          placeholder="us-east-1"
-        />
-      </label>
+      Bucket
+      <input
+        type="text"
+        name="s3_bucket"
+        value="{{ settings.s3_bucket }}"
+        placeholder="my-media-bucket"
+      />
+    </label>
+    <label>
+      Region
+      <input
+        type="text"
+        name="s3_region"
+        value="{{ settings.s3_region }}"
+        placeholder="us-east-1"
+      />
+    </label>
 
     <label>
       Endpoint URL
@@ -71,46 +71,46 @@ block admin_content %}
 
     <label>
       Access Key ID
-        <input
-          type="text"
-          name="s3_access_key_id"
-          value="{{ settings.s3_access_key_id }}"
-          autocomplete="off"
-        />
-      </label>
-      <label>
-        Secret Access Key
-        <input
-          type="password"
-          name="s3_secret_access_key"
-          value="{{ settings.s3_secret_access_key }}"
-          autocomplete="off"
-        />
-      </label>
+      <input
+        type="text"
+        name="s3_access_key_id"
+        value="{{ settings.s3_access_key_id }}"
+        autocomplete="off"
+      />
+    </label>
+    <label>
+      Secret Access Key
+      <input
+        type="password"
+        name="s3_secret_access_key"
+        value="{{ settings.s3_secret_access_key }}"
+        autocomplete="off"
+      />
+    </label>
 
     <label>
       Key Prefix
-        <input
-          type="text"
-          name="s3_prefix"
-          value="{{ settings.s3_prefix }}"
-          placeholder="uploads"
-        />
-        <small>Optional path prefix for all uploaded files.</small>
-      </label>
-      <label>
-        Public URL Base
-        <input
-          type="url"
-          name="s3_public_url"
-          value="{{ settings.s3_public_url }}"
-          placeholder="https://cdn.example.com"
-        />
-        <small
-          >If set, media URLs serve directly from this origin instead of
-          proxying through the app.</small
-        >
-      </label>
+      <input
+        type="text"
+        name="s3_prefix"
+        value="{{ settings.s3_prefix }}"
+        placeholder="uploads"
+      />
+      <small>Optional path prefix for all uploaded files.</small>
+    </label>
+    <label>
+      Public URL Base
+      <input
+        type="url"
+        name="s3_public_url"
+        value="{{ settings.s3_public_url }}"
+        placeholder="https://cdn.example.com"
+      />
+      <small
+        >If set, media URLs serve directly from this origin instead of proxying
+        through the app.</small
+      >
+    </label>
   </div>
 
   <h3>Site</h3>
@@ -122,7 +122,9 @@ block admin_content %}
       {% for file in media_files %}
       <option
         value="{{ file.filename }}"
-        {% if settings.favicon == file.filename %}selected{% endif %}
+        {% if settings.favicon == "file.filename" %}selected{%
+        endif
+        %}
       >
         {{ file.original_name }} ({{ file.filename }})
       </option>
@@ -135,20 +137,45 @@ block admin_content %}
   </label>
 
   <label>
+    Logo
+    <select name="logo">
+      <option value="">None</option>
+      {% for file in media_files %}
+      <option
+        value="{{ file.filename }}"
+        {% if settings.logo == file.filename %}selected{% endif %}
+      >
+        {{ file.original_name }} ({{ file.filename }})
+      </option>
+      {% endfor %}
+    </select>
+    <small
+      >Select an uploaded image to use as the site logo. Available in theme
+      templates as <code>{{ '{{ logo }}' }}</code>.</small
+    >
+  </label>
+
+  <label>
     Site Head
-    <select id="css-preset" onchange="
-      if (this.value) {
-        document.querySelector('[name=site_head]').value = this.value;
-        this.selectedIndex = 0;
-      }
-    ">
+    <select
+      id="css-preset"
+      onchange="
+        if (this.value) {
+          document.querySelector('[name=site_head]').value = this.value;
+          this.selectedIndex = 0;
+        }
+      "
+    >
       <option value="">Insert a classless CSS framework…</option>
       {% for key, name, head_html in css_frameworks %}
       <option value="{{ head_html }}">{{ name }}</option>
       {% endfor %}
     </select>
     <textarea name="site_head" rows="6">{{ settings.site_head }}</textarea>
-    <small>HTML injected into <code>&lt;head&gt;</code> on the public site (e.g. stylesheet links, meta tags). Admin always uses Pico.</small>
+    <small
+      >HTML injected into <code>&lt;head&gt;</code> on the public site (e.g.
+      stylesheet links, meta tags). Admin always uses Pico.</small
+    >
   </label>
 
   <h3>Performance</h3>
@@ -158,11 +185,20 @@ block admin_content %}
     {% if stateless %}
     <ins>active</ins>
     <br />
-    <small>The <code>STATELESS</code> environment variable is set. Content blocks and storage settings are reloaded from the database on every request. This is appropriate for serverless and multi-instance deployments.</small>
+    <small
+      >The <code>STATELESS</code> environment variable is set. Content blocks
+      and storage settings are reloaded from the database on every request. This
+      is appropriate for serverless and multi-instance deployments.</small
+    >
     {% else %}
     <del>inactive</del>
     <br />
-    <small>Content blocks and storage settings are cached in memory and refreshed on save. Set the <code>STATELESS</code> environment variable to <code>true</code> to reload from the database on every request (recommended for serverless deployments).</small>
+    <small
+      >Content blocks and storage settings are cached in memory and refreshed on
+      save. Set the <code>STATELESS</code> environment variable to
+      <code>true</code> to reload from the database on every request
+      (recommended for serverless deployments).</small
+    >
     {% endif %}
   </p>
 

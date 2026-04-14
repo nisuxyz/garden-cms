@@ -722,6 +722,7 @@ _SETTINGS_KEYS = [
     "s3_prefix",
     "s3_public_url",
     "favicon",
+    "logo",
     "site_head",
 ]
 
