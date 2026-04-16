@@ -2,9 +2,13 @@
   /* Two-column admin layout */
   #docs-main {
     display: grid;
-    grid-template-columns: 12rem 1fr;
+    grid-template-columns: 12rem minmax(0, 1fr);
     gap: 2rem;
     align-items: start;
+  }
+
+  #docs-main > article {
+    min-width: 0;
   }
 
   /* Sidebar */
@@ -31,18 +35,129 @@
   aside form {
     margin: 0;
   }
+
+  #docs-main .crumbs {
+    font-size: 0.85rem;
+    margin-bottom: 2rem;
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .docs-mobile-nav {
+    display: none;
+  }
+
+  .docs-mobile-nav details {
+    margin: 0 0 1rem;
+  }
+
+  .docs-mobile-nav summary {
+    font-size: 0.95rem;
+    font-weight: 600;
+  }
+
+  .docs-mobile-nav ul {
+    list-style: none;
+    padding: 0;
+    margin: 0.75rem 0 0;
+    max-height: 50vh;
+    overflow: auto;
+  }
+
+  .docs-mobile-nav li {
+    margin-bottom: 0.25rem;
+  }
+
+  .docs-mobile-nav a {
+    display: block;
+    padding: 0.4rem 0.6rem;
+    border-radius: var(--pico-border-radius);
+    text-decoration: none;
+  }
+
+  .docs-mobile-nav a[aria-current="page"] {
+    background: var(--pico-card-sectioning-background-color);
+    font-weight: 600;
+  }
+
+  @media (max-width: 768px) {
+    #docs-main {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+    #docs-main > aside {
+      display: none;
+    }
+    #docs-main .crumbs {
+      justify-content: flex-start;
+      margin-bottom: 1rem;
+      gap: 0.5rem;
+    }
+    .docs-mobile-nav {
+      display: block;
+    }
+  }
 </style>
 <main id="docs-main">
+  <article>
+    <span class="crumbs">
+      <a href="/docs">Docs</a>
+      &rsaquo;
+      <strong>{{ title }}</strong>
+    </span>
+
+    <nav class="docs-mobile-nav" aria-label="Docs sections">
+        <hr/>
+      <details {% if title == "Docs" %}open{% endif %}>
+        <summary>Topics</summary>
+        <ul>
+          <li>
+            <a href="/docs/installation" {% if title == "Installation" %}aria-current="page"{% endif %}>Installation</a>
+          </li>
+          <li>
+            <a href="/docs/getting-started" {% if title == "Getting Started" %}aria-current="page"{% endif %}>Getting Started</a>
+          </li>
+          <li>
+            <a href="/docs/pages" {% if title == "Pages" %}aria-current="page"{% endif %}>Pages</a>
+          </li>
+          <li>
+            <a href="/docs/content-blocks" {% if title == "Content Blocks" %}aria-current="page"{% endif %}>Content Blocks</a>
+          </li>
+          <li>
+            <a href="/docs/collections" {% if title == "Collections" %}aria-current="page"{% endif %}>Collections</a>
+          </li>
+          <li>
+            <a href="/docs/themes" {% if title == "Themes" %}aria-current="page"{% endif %}>Themes</a>
+          </li>
+          <li>
+            <a href="/docs/media" {% if title == "Media" %}aria-current="page"{% endif %}>Media</a>
+          </li>
+          <li>
+            <a href="/docs/markdown-mounts" {% if title == "Markdown Mounts" %}aria-current="page"{% endif %}>Markdown Mounts</a>
+          </li>
+          <li>
+            <a href="/docs/templates" {% if title == "Templates" %}aria-current="page"{% endif %}>Templates</a>
+          </li>
+          <li>
+            <a href="/docs/authentication" {% if title == "Authentication" %}aria-current="page"{% endif %}>Authentication</a>
+          </li>
+          <li>
+            <a href="/docs/deployment" {% if title == "Deployment" %}aria-current="page"{% endif %}>Deployment</a>
+          </li>
+          <li>
+            <a href="/docs/configuration" {% if title == "Configuration" %}aria-current="page"{% endif %}>Configuration</a>
+          </li>
+        </ul>
+      </details>
+        <hr/>
+    </nav>
+
+    {{ content }}
+  </article>
   <aside class="sticky-top">
-    <span
-      style="
-        font-size: 0.85rem;
-        margin-bottom: 2rem;
-        display: flex;
-        gap: 1rem;
-        justify-content: center;
-      "
-    >
+    <span class="crumbs">
       <a href="/docs">Docs</a>
       &rsaquo;
       <strong>{{ title }}</strong>
@@ -89,5 +204,4 @@
       </ul>
     </nav>
   </aside>
-  <article>{{ content }}</article>
 </main>

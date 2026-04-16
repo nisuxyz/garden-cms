@@ -21,7 +21,7 @@ uv sync
 Create a PostgreSQL database:
 
 ```bash
-createdb bussin
+createdb garden
 ```
 
 Run migrations:
@@ -37,7 +37,7 @@ uv run piccolo migrations forwards session_auth
 Create a `.env` file in the project root:
 
 ```bash
-DATABASE_URL=postgres://postgres:postgres@localhost:5432/bussin
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/garden
 SECRET_KEY=change-me-to-a-random-string
 ```
 

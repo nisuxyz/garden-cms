@@ -6,6 +6,7 @@ admin_content %}
 </hgroup>
 
 {% if pages %}
+<div class="table-scroll">
 <table>
   <thead>
     <tr>
@@ -60,6 +61,7 @@ admin_content %}
     {% endfor %}
   </tbody>
 </table>
+</div>
 {% else %}
 <p>No pages yet. <a href="/admin/pages/new">Create one &rarr;</a></p>
 {% endif %} {% endblock %}

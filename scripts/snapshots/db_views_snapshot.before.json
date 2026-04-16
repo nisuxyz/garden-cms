@@ -1,0 +1,164 @@
+{
+  "summary": {
+    "theme_count": 1,
+    "page_count": 3,
+    "collection_count": 2,
+    "content_block_count": 12,
+    "active_theme_slug": "mycelium"
+  },
+  "active_theme": {
+    "id": 1,
+    "name": "Mycelium",
+    "slug": "mycelium",
+    "active": true,
+    "base_template": "{% extends \"layout/base.html\" %}\r\n{% block head %}\r\n  <script>\r\n    (function () {\r\n      var saved = localStorage.getItem(\"theme\");\r\n      if (saved !== \"light\" && saved !== \"dark\") {\r\n        saved = window.matchMedia(\"(prefers-color-scheme: dark)\").matches\r\n          ? \"dark\"\r\n          : \"light\";\r\n      }\r\n      document.documentElement.setAttribute(\"data-theme\", saved);\r\n    })();\r\n  </script>\r\n  {{ extra_head }}\r\n{% endblock %}\r\n{% block body %}\r\n<header>\r\n  <nav class=\"fixed-top bg-contrast\" style=\"padding-left: 2rem; padding-right: 2rem;\">\r\n    <ul>\r\n      <li><img width=\"48\" height=\"48\" src=\"{{ logo }}\"/></li>\r\n      <li><strong><a href=\"/\" style=\"text-decoration:none\">&larr; Home</a></strong></li>\r\n    </ul>\r\n    <ul>\r\n      <li><a href=\"/docs\">Docs</a></li>\r\n      {% for item in nav_items %}\r\n      <li><a href=\"{{ item.url }}\">{{ item.title }}</a></li>\r\n      {% endfor %}\r\n      <li>\r\n        <a href=\"https://github.com/nisuxyz/garden-cms\">\r\n          <img width=\"36\" height=\"36\" src=\"https://cdn.jsdelivr.net/gh/selfhst/icons@main/svg/github.svg\"/>\r\n        </a>\r\n      </li>\r\n      <li>\r\n        <button data-theme-toggle\r\n          onclick=\"var d=document.documentElement,t=d.getAttribute('data-theme')==='dark'?'light':'dark';d.setAttribute('data-theme',t);localStorage.setItem('theme',t);\"\r\n          title=\"Toggle theme\" aria-label=\"Toggle theme\"></button>\r\n      </li>\r\n    </ul>\r\n  </nav>\r\n</header>\r\n<main style=\"margin-top: 4rem;\">{{ content }}</main>\r\n<footer>\r\n  <small>\r\n    powered by <a href=\"https://litestar.dev\" target=\"_blank\">litestar</a> &middot;\r\n    <a href=\"https://htmx.org\" target=\"_blank\">htmx</a>\r\n    <!-- <a href=\"https://picocss.com\" target=\"_blank\">pico css</a> -->\r\n  </small>\r\n</footer>\r\n{% endblock %}",
+    "css": "body { display: flex; flex-direction: column; min-height: 100vh; padding: 2rem; }\r\nbody>footer { margin-top: auto; text-align: center; }\r\n[data-theme-toggle] {\r\n  background: none; border: none; cursor: pointer;\r\n  padding: 0.25rem 0.5rem; font-size: 1.1rem;\r\n  color: var(--pico-muted-color); transition: color var(--pico-transition);\r\n}\r\n[data-theme-toggle]:hover { color: var(--pico-color); }\r\n:root[data-theme=\"light\"] [data-theme-toggle]::before { content: \"☽\"; }\r\n:root[data-theme=\"dark\"] [data-theme-toggle]::before { content: \"☀\"; }"
+  },
+  "themes": [
+    {
+      "id": 1,
+      "name": "Mycelium",
+      "slug": "mycelium",
+      "active": true
+    }
+  ],
+  "pages": [
+    {
+      "id": 1,
+      "title": "Home",
+      "slug": "home",
+      "published": true,
+      "show_in_nav": false,
+      "nav_order": 0,
+      "body": "<header style=\"text-align:center; padding:3rem 0 2rem\">\r\n  {% if logo %}<img src=\"{{ logo }}\" alt=\"Garden CMS\" style=\"max-width:140px; margin-bottom:1rem\" />{% endif %}\r\n  <h1>{{ site.hero_headline }}</h1>\r\n  <p style=\"font-size:1.25rem; max-width:40rem; margin:0 auto\">{{ site.hero_subtext }}</p>\r\n  <div style=\"display:flex; gap:1rem; justify-content:center; margin-top:2rem\">\r\n    <a role=\"button\" href=\"/docs/getting-started\">Get Started</a>\r\n    <a role=\"button\" href=\"/docs\" class=\"secondary outline\">Documentation</a>\r\n  </div>\r\n</header>\r\n\r\n<hr />\r\n\r\n<section style=\"padding:2rem 0\">\r\n  <hgroup style=\"text-align:center\">\r\n    <h2>Features</h2>\r\n    <p>Everything you need to manage content, nothing you don't.</p>\r\n  </hgroup>\r\n  <div style=\"display:grid; grid-template-columns:repeat(auto-fit, minmax(16rem, 1fr)); gap:1.5rem; margin-top:2rem\">\r\n    <article>\r\n      <h3>Pages &amp; Templates</h3>\r\n      <p>Write page bodies in Jinja2 with full access to content blocks, media URLs, and JinjaX components. Override themes per page.</p>\r\n    </article>\r\n    <article>\r\n      <h3>Collections</h3>\r\n      <p>Define structured content types with custom field schemas. Card and detail templates with HTMX-powered paginated feeds.</p>\r\n    </article>\r\n    <article>\r\n      <h3>Content Blocks</h3>\r\n      <p>Global key/value pairs editable from the admin. Text, HTML with Jinja support, or image references — available everywhere as <code>{{ \"{{ site.key }}\" }}</code>.</p>\r\n    </article>\r\n    <article>\r\n      <h3>Themes</h3>\r\n      <p>Jinja2 base templates with CSS. 48 classless CSS framework presets built in. Light/dark mode support out of the box.</p>\r\n    </article>\r\n    <article>\r\n      <h3>Media Storage</h3>\r\n      <p>Upload images to local disk or S3-compatible storage. CDN support with public URL rewriting. One-year immutable cache headers.</p>\r\n    </article>\r\n    <article>\r\n      <h3>Markdown Mounts</h3>\r\n      <p>Drop <code>.md</code> files in a directory, map it to a route in the admin. File-based routing with full theme integration.</p>\r\n    </article>\r\n    <article>\r\n      <h3>Authentication</h3>\r\n      <p>Password login or OAuth2/OIDC with PKCE. Group-based access control. Rate-limited login endpoint.</p>\r\n    </article>\r\n    <article>\r\n      <h3>Stateless Deploys</h3>\r\n      <p>Set <code>STATELESS=true</code> for serverless and multi-instance environments. One env var, zero code changes.</p>\r\n    </article>\r\n  </div>\r\n</section>\r\n\r\n<hr />\r\n\r\n<section style=\"padding:2rem 0\">\r\n  <hgroup style=\"text-align:center\">\r\n    <h2>Stack</h2>\r\n    <p>Built on mature, well-documented Python libraries.</p>\r\n  </hgroup>\r\n  <div style=\"display:grid; grid-template-columns:repeat(auto-fit, minmax(12rem, 1fr)); gap:1rem; margin-top:2rem; text-align:center\">\r\n    <div><strong>Litestar</strong><br /><small>ASGI framework</small></div>\r\n    <div><strong>Piccolo</strong><br /><small>Async ORM</small></div>\r\n    <div><strong>PostgreSQL</strong><br /><small>Database</small></div>\r\n    <div><strong>Jinja2 + JinjaX</strong><br /><small>Templates &amp; components</small></div>\r\n    <div><strong>HTMX</strong><br /><small>Admin interactions</small></div>\r\n    <!--<div><strong>Pico CSS</strong><br /><small>Classless admin UI</small></div>-->\r\n  </div>\r\n</section>\r\n\r\n<hr />\r\n\r\n<section style=\"padding:2rem 0\">\r\n  {{ site.about }}\r\n</section>\r\n<!--\r\n<section style=\"padding:2rem 0\">\r\n  <h2>Latest from the Blog</h2>\r\n  <CollectionFeed slug=\"blog\" />\r\n</section>\r\n-->"
+    },
+    {
+      "id": 2,
+      "title": "Blog",
+      "slug": "blog",
+      "published": false,
+      "show_in_nav": false,
+      "nav_order": 1,
+      "body": "<h1>Blog</h1>\r\n<CollectionFeed slug=\"blog\" />"
+    },
+    {
+      "id": 6,
+      "title": "About",
+      "slug": "about",
+      "published": false,
+      "show_in_nav": false,
+      "nav_order": 2,
+      "body": "<section>\r\n  {% if logo %}<img src=\"{{ logo }}\" alt=\"Garden CMS logo\" style=\"max-width: 200px;\" />{% endif %}\r\n  <h1>About</h1>\r\n  <p>{{ site.about_intro }}</p>\r\n</section>\r\n\r\n<section>\r\n  <h2>Features</h2>\r\n  {{ site.about_features }}\r\n</section>\r\n\r\n<section>\r\n  <h2>Stack</h2>\r\n  {{ site.about_stack }}\r\n</section>\r\n\r\n<section>\r\n  <h2>Deploying</h2>\r\n  {{ site.about_deployment }}\r\n</section>"
+    }
+  ],
+  "collections": [
+    {
+      "id": 1,
+      "name": "posts",
+      "slug": "blog",
+      "description": "Posts and articles",
+      "items_per_page": 10,
+      "fields_schema": "[{\"name\": \"summary\", \"type\": \"text\", \"required\": true}, {\"name\": \"body\", \"type\": \"markdown\", \"required\": true}, {\"name\": \"tags\", \"type\": \"list\", \"required\": false}]",
+      "card_template": "<article>\r\n  <header>\r\n    <h3><a href=\"/blog/{{item.slug}}\">{{item.title}}</a></h3>\r\n    <small class=\"meta\">{{item.created_at}}</small>\r\n  </header>\r\n  <p>{{item.summary}}</p>\r\n  <footer>\r\n    {% for tag in item.tags.split(',') %}\r\n      <span class=\"badge badge-primary\">{{tag}}</span>\r\n    {% endfor %}\r\n  </footer>\r\n</article>",
+      "detail_template": "{{item.title}}\r\n\r\n<small class=\"meta\">{{item.created_at}}</small>\r\n\r\n{{item.summary}}\r\n\r\n<hr/>\r\n\r\n{{item.body}}\r\n\r\n{{item.tags}}",
+      "empty_template": "<p>no posts yet. check back later!</p>"
+    },
+    {
+      "id": 2,
+      "name": "projects",
+      "slug": "projects",
+      "description": "Projects",
+      "items_per_page": 12,
+      "fields_schema": "[{\"name\": \"summary\", \"type\": \"text\", \"required\": true}, {\"name\": \"body\", \"type\": \"markdown\", \"required\": true}, {\"name\": \"tags\", \"type\": \"list\", \"required\": false}, {\"name\": \"url\", \"type\": \"url\", \"required\": false}, {\"name\": \"repo_url\", \"type\": \"url\", \"required\": false}]",
+      "card_template": "<article>\r\n  <header>\r\n    <h3><a href=\"/projects/${item.slug}\">${item.title}</a></h3>\r\n  </header>\r\n  <p>${item.summary}</p>\r\n  <footer>${item.tags}</footer>\r\n</article>",
+      "detail_template": "# ${item.title}\r\n\r\n${item.summary}\r\n\r\n---\r\n\r\n${item.body}\r\n\r\n${item.tags}",
+      "empty_template": "no projects yet. check back later!"
+    }
+  ],
+  "content_blocks": [
+    {
+      "id": 3,
+      "key": "about",
+      "label": "About (Home)",
+      "block_type": "html",
+      "value": "<p>Garden CMS is a lightweight, database-backed content management system written in Python. It is built on Litestar and Piccolo ORM, renders pages through Jinja2 and JinjaX templates, and uses HTMX for seamless interactions. Features include editable page templates with live preview, reusable content blocks, custom collections with user-defined schemas, media uploads to local disk or S3-compatible storage, swappable themes, and slug redirect history. Build any website you can imagine, dynamically.</p>"
+    },
+    {
+      "id": 12,
+      "key": "about_deployment",
+      "label": "About Deployment",
+      "block_type": "html",
+      "value": "<p>Garden CMS runs as a standard ASGI application. It supports both stateful and stateless deployments, with caching & performance improvements in stateful deployments and stateless deployments optimized for serverless and multi-instance deployments, which reloads content and storage configuration from the database on every request instead of caching in memory. Need a hosting platform? Check out <a href=\"phemeral.dev\">Phemeral</a>!</p>"
+    },
+    {
+      "id": 10,
+      "key": "about_features",
+      "label": "About Features",
+      "block_type": "html",
+      "value": "<ul><li>Page and collection management with Jinja2 templating</li><li>JinjaX components for reusable template blocks</li><li>HTMX-powered admin interface</li><li>Theme system with per-page overrides</li><li>Pluggable media storage (local disk or S3-compatible)</li><li>Global content blocks editable from the admin</li><li>OAuth and password authentication</li></ul>"
+    },
+    {
+      "id": 9,
+      "key": "about_intro",
+      "label": "About Intro",
+      "block_type": "text",
+      "value": "A lightweight, database-driven content management system built for developers who want full control over their markup and deployment."
+    },
+    {
+      "id": 11,
+      "key": "about_stack",
+      "label": "About Stack",
+      "block_type": "html",
+      "value": "<ul><li>Litestar (Python ASGI framework)</li><li>Piccolo ORM with PostgreSQL</li><li>Jinja2 + JinjaX template rendering</li><li>Pico CSS (admin), classless CSS preset support (public)</li></ul>"
+    },
+    {
+      "id": 8,
+      "key": "contact.intro",
+      "label": "Contact Intro",
+      "block_type": "html",
+      "value": "Have a question or want to get in touch? Use the form below."
+    },
+    {
+      "id": 1,
+      "key": "hero_headline",
+      "label": "Hero Headline",
+      "block_type": "text",
+      "value": "Garden CMS"
+    },
+    {
+      "id": 2,
+      "key": "hero_subtext",
+      "label": "Hero Subtext",
+      "block_type": "text",
+      "value": "A Python content management system with live-preview editing, flexible collections, and pluggable storage."
+    },
+    {
+      "id": 6,
+      "key": "resume.education",
+      "label": "Resume Education",
+      "block_type": "html",
+      "value": "<h2>Education</h2>\n<p>Add your education here.</p>"
+    },
+    {
+      "id": 5,
+      "key": "resume.experience",
+      "label": "Resume Experience",
+      "block_type": "html",
+      "value": "<h2>Experience</h2>\n<p>Add your experience here.</p>"
+    },
+    {
+      "id": 4,
+      "key": "resume.intro",
+      "label": "Resume Intro",
+      "block_type": "html",
+      "value": "<p>A summary of professional background, education, and skills.</p>"
+    },
+    {
+      "id": 7,
+      "key": "resume.skills",
+      "label": "Resume Skills",
+      "block_type": "html",
+      "value": "<h2>Skills</h2>\n<p>Add your skills here.</p>"
+    }
+  ]
+}

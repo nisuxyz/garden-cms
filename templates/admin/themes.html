@@ -6,6 +6,7 @@ admin_content %}
 </hgroup>
 
 {% if themes %}
+<div class="table-scroll">
 <table>
   <thead>
     <tr>
@@ -46,6 +47,7 @@ admin_content %}
     {% endfor %}
   </tbody>
 </table>
+</div>
 {% else %}
 <p>No themes yet. <a href="/admin/themes/new">Create one &rarr;</a></p>
 {% endif %} {% endblock %}

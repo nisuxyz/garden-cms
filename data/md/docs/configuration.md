@@ -6,7 +6,7 @@ All configuration is done via environment variables. Settings with a default val
 
 | Variable       | Description                                  | Default                                              |
 | -------------- | -------------------------------------------- | ---------------------------------------------------- |
-| `DATABASE_URL` | PostgreSQL connection string                 | `postgres://postgres:postgres@localhost:5432/bussin` |
+| `DATABASE_URL` | PostgreSQL connection string                 | `postgres://postgres:postgres@localhost:5432/garden` |
 | `SECRET_KEY`   | Session cookie encryption key (min 16 chars) | `dev-secret-change-me`                               |
 | `DEBUG`        | Enable debug mode                            | `false`                                              |
 

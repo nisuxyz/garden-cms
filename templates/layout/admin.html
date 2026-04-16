@@ -36,6 +36,25 @@ head %}
     min-width: 0;
   }
 
+  /* Shared utility: horizontally scroll dense tables on small screens. */
+  .table-scroll {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .table-scroll > table {
+    margin-bottom: 0;
+    min-width: 42rem;
+  }
+  .table-scroll td code,
+  .table-scroll td small,
+  .table-scroll td a {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    white-space: normal;
+  }
+
   /* Keep wide editor / preview content from forcing page width */
   [data-editor],
   iframe.preview {
@@ -55,6 +74,7 @@ head %}
     display: flex;
     align-items: center;
     gap: 1rem;
+    flex-wrap: wrap;
   }
 
   /* CodeJar editor */
@@ -78,6 +98,47 @@ head %}
     border: 1px solid var(--pico-muted-border-color);
     border-radius: var(--pico-border-radius);
     background: #fff;
+  }
+
+  @media (max-width: 1024px) {
+    main {
+      grid-template-columns: 10rem minmax(0, 1fr);
+      gap: 1.25rem;
+    }
+  }
+
+  @media (max-width: 768px) {
+    main {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+    aside {
+      order: -1;
+    }
+    [data-editor] {
+      min-height: 9rem;
+      max-height: 24rem;
+    }
+    iframe.preview {
+      min-height: 14rem;
+    }
+    .table-scroll > table {
+      min-width: 34rem;
+    }
+  }
+
+  @media (max-width: 640px) {
+    main {
+      gap: 0.75rem;
+    }
+    aside nav a,
+    aside form button {
+      padding: 0.35rem 0.55rem;
+      font-size: 0.85rem;
+    }
+    .table-scroll > table {
+      min-width: 30rem;
+    }
   }
 
   /* HTMX request spinner */
