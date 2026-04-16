@@ -11,6 +11,11 @@
     min-width: 0;
   }
 
+  /* Keep desktop order as sidebar (left) + content (right). */
+  #docs-main > aside {
+    order: -1;
+  }
+
   /* Sidebar */
   aside nav ul {
     list-style: none;
@@ -43,6 +48,11 @@
     gap: 1rem;
     justify-content: center;
     flex-wrap: wrap;
+  }
+
+  /* Desktop: keep only the sidebar breadcrumb indicator. */
+  #docs-main > article > .crumbs {
+    display: none;
   }
 
   .docs-mobile-nav {
@@ -94,6 +104,9 @@
       justify-content: flex-start;
       margin-bottom: 1rem;
       gap: 0.5rem;
+    }
+    #docs-main > article > .crumbs {
+      display: flex;
     }
     .docs-mobile-nav {
       display: block;
