@@ -1,4 +1,5 @@
 # app.py
+import hashlib
 import os
 from pathlib import Path
 
@@ -25,9 +26,28 @@ load_dotenv()
 
 # ── Session middleware ─────────────────────────────────────
 
-_secret = os.getenv("SECRET_KEY", "dev-secret-change-me")
-# CookieBackendConfig needs a bytes key (≥16 bytes)
-_secret_bytes = _secret.encode().ljust(16, b"\0")[:16]
+_DEFAULT_SECRET = "dev-secret-change-me"
+_secret = os.getenv("SECRET_KEY", _DEFAULT_SECRET) or ""
+
+# CookieBackendConfig requires a bytes key of exactly 16, 24, or 32 bytes.
+# The old code did `.encode().ljust(16, b"\0")[:16]`, which silently truncated
+# long secrets to 16 bytes — a 64-char SECRET_KEY was effectively only as
+# strong as its first 16 bytes. Instead, derive a 32-byte key via SHA-256 so
+# every byte of the configured secret contributes and any length is accepted.
+_secret_bytes = hashlib.sha256(_secret.encode()).digest()  # 32 bytes
+
+# Fail fast if the insecure dev default (or an empty secret) is used in what
+# looks like a production deploy.
+_is_dev = (
+    os.getenv("DEBUG", "false").lower() == "true"
+    or "localhost" in os.getenv("DATABASE_URL", "localhost")
+)
+if _secret in ("", _DEFAULT_SECRET) and not _is_dev:
+    raise RuntimeError(
+        "SECRET_KEY is unset or empty (using the insecure dev default). Set "
+        "SECRET_KEY to a random string for production deployments."
+    )
+
 session_config = CookieBackendConfig(secret=_secret_bytes)  # type: ignore[arg-type]
 
 

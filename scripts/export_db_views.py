@@ -111,7 +111,7 @@ async def _snapshot() -> dict[str, Any]:
 
 
 async def _run(args: argparse.Namespace) -> int:
-    await DB.start_connection_pool(max_inactive_connection_lifetime=1)
+    await DB.start_connection_pool(max_inactive_connection_lifetime=300)
     try:
         payload = await _snapshot()
     finally:
