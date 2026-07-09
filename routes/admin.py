@@ -749,6 +749,17 @@ async def settings_save(
     settings: dict[str, str] = {}
     for key in _SETTINGS_KEYS:
         val = (data.get(key) or "").strip()
+
+        # The S3 secret is write-only: if the admin left the field blank,
+        # preserve whatever is already stored instead of clobbering it with "".
+        if key == "s3_secret_access_key" and not val:
+            _existing = await (
+                SiteSettings.select(SiteSettings.value)
+                .where(SiteSettings.key == key)
+                .first()
+            )
+            val = (_existing or {}).get("value", "") or ""
+
         settings[key] = val
 
         existing = await (

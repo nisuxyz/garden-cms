@@ -13,6 +13,12 @@ wheels/
 # Env and data files
 .env
 data/*.db
+data/site.db/
+data/media/
 
 # Docs
 docs/
+
+# Agent / session state
+.claudine/
+.claude/

@@ -83,9 +83,12 @@ block admin_content %}
       <input
         type="password"
         name="s3_secret_access_key"
-        value="{{ settings.s3_secret_access_key }}"
+        placeholder="{{ '(%d characters currently stored — leave blank to keep)'|format(settings.s3_secret_access_key|length) if settings.s3_secret_access_key else 'Leave blank to keep existing' }}"
         autocomplete="off"
       />
+      {% if settings.s3_secret_access_key %}
+      <small>A secret is currently stored. Leave the field blank when saving to keep it unchanged.</small>
+      {% endif %}
     </label>
 
     <label>
@@ -122,9 +125,7 @@ block admin_content %}
       {% for file in media_files %}
       <option
         value="{{ file.filename }}"
-        {% if settings.favicon == "file.filename" %}selected{%
-        endif
-        %}
+        {% if settings.favicon == file.filename %}selected{% endif %}
       >
         {{ file.original_name }} ({{ file.filename }})
       </option>
