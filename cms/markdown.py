@@ -39,7 +39,7 @@ def list_md_routes(mount_dir: str) -> list[str]:
     returns ``"styling/css"``.
     """
     root = (_MD_ROOT / mount_dir).resolve()
-    if not root.is_dir() or not str(root).startswith(str(_MD_ROOT.resolve())):
+    if not root.is_dir() or not root.is_relative_to(_MD_ROOT.resolve()):
         return []
     routes: list[str] = []
     for p in sorted(root.rglob("*.md")):
@@ -56,13 +56,15 @@ def resolve_md_file(mount_dir: str, sub_path: str) -> tuple[str, str, str | None
     file (walking from the file's directory up to the mount root), or ``None``.
     *sub_path* must not contain ``..`` or start with ``/``.
     """
-    # Path-traversal protection.
+    # Path-traversal protection — reject obvious escapes before resolving.
     if ".." in sub_path or sub_path.startswith("/"):
         return None
 
-    target = (_MD_ROOT / mount_dir / f"{sub_path}.md").resolve()
     safe_root = (_MD_ROOT / mount_dir).resolve()
-    if not str(target).startswith(str(safe_root)):
+    target = (_MD_ROOT / mount_dir / f"{sub_path}.md").resolve()
+    # Use is_relative_to rather than str.startswith to avoid the classic
+    # /app/data/md/docsX falsely matching /app/data/md/docs.
+    if not target.is_relative_to(safe_root) or not safe_root.is_relative_to(_MD_ROOT.resolve()):
         return None
     if not target.is_file():
         return None

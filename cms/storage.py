@@ -44,17 +44,30 @@ class LocalStorageBackend(StorageBackend):
     """Store files under a local directory (default: ``data/media/``)."""
 
     def __init__(self, root: str | Path | None = None) -> None:
-        self.root = Path(root) if root else Path("data/media")
+        self.root = (Path(root) if root else Path("data/media")).resolve()
+
+    def _safe_path(self, filename: str) -> Path:
+        """Resolve *filename* against the root and reject escapes.
+
+        ``filename`` is a UUID-prefixed name from the upload layer or an
+        admin-set setting (favicon/logo); it must never reach outside the
+        media root.  Resolving and checking ``is_relative_to`` closes the
+        path-traversal vector that an admin-settable value could otherwise use.
+        """
+        resolved = (self.root / filename).resolve()
+        if not resolved.is_relative_to(self.root):
+            raise PermissionError(f"path escapes media root: {filename!r}")
+        return resolved
 
     async def save(self, filename: str, data: bytes, content_type: str) -> str:
         self.root.mkdir(parents=True, exist_ok=True)
-        dest = self.root / filename
+        dest = self._safe_path(filename)
         dest.write_bytes(data)
         return str(dest)
 
     async def delete(self, filename: str) -> None:
         try:
-            (self.root / filename).unlink()
+            self._safe_path(filename).unlink()
         except FileNotFoundError:
             pass
 
@@ -65,7 +78,7 @@ class LocalStorageBackend(StorageBackend):
         """Read a file from disk."""
         import mimetypes
 
-        path = self.root / filename
+        path = self._safe_path(filename)
         if not path.is_file():
             raise FileNotFoundError(filename)
         data = path.read_bytes()
