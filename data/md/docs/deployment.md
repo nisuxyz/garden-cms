@@ -73,13 +73,13 @@ The application sets these headers on all responses:
 
 ## Database migrations
 
-After upgrading, run Piccolo migrations:
+The Docker image runs migrations automatically on boot via the `entrypoint.sh` script. When running from source or upgrading manually:
 
 ```bash
 uv run piccolo migrations forwards db
 ```
 
-Or in Docker:
+Or in Docker (if the container is already running):
 
 ```bash
 docker compose exec app uv run piccolo migrations forwards db

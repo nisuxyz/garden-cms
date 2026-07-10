@@ -28,7 +28,7 @@ Set these environment variables:
 | `OAUTH_CLIENT_SECRET` | OAuth client secret                                             |
 | `OAUTH_ISSUER_URL`    | Provider issuer URL (e.g. `https://auth.example.com`)           |
 | `OAUTH_REDIRECT_URI`  | Callback URL (e.g. `https://yoursite.com/admin/oauth/callback`) |
-| `OAUTH_ALLOWED_GROUP` | Optional: restrict access to users in this group                |
+| `OAUTH_ALLOWED_GROUP` | Restrict access to users in this group (**required in production**) |
 
 ### Flow
 
@@ -42,9 +42,15 @@ Set these environment variables:
 
 If `OAUTH_ALLOWED_GROUP` is set, only users belonging to that group (via the `groups` claim in userinfo) are allowed access. This works with providers like Authentik, Keycloak, and Pocket ID that include group membership in the userinfo response.
 
+> **Warning:** If `OAUTH_ALLOWED_GROUP` is **empty or unset**, **any user who can authenticate against the issuer is granted admin access.** Always set it in production. The app logs a warning at startup when this is the case.
+
+## CSRF protection
+
+All admin mutating endpoints (POST forms, HTMX `hx-post`/`hx-delete` requests) are protected by CSRF tokens. The token is set in a `csrftoken` cookie on safe (GET) requests and validated via either the `x-csrftoken` header (HTMX) or a hidden `_csrf_token` form field on submission. No action is required from template authors — the admin layout attaches the token to every outbound HTMX request automatically.
+
 ## Session management
 
-Sessions are stored in encrypted cookies using Litestar's `CookieBackendConfig`. The encryption key is derived from the `SECRET_KEY` environment variable. Use a strong, random value in production.
+Sessions are stored in encrypted cookies using Litestar's `CookieBackendConfig`. The signing key is derived from the `SECRET_KEY` environment variable via SHA-256. Use a strong, random value (≥32 bytes) in production — the app refuses to start with the insecure dev default in non-dev deployments.
 
 ## Rate limiting
 

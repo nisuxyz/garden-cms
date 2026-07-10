@@ -4,7 +4,7 @@ Garden CMS separates CSS into two layers: the **admin interface** uses Pico CSS 
 
 ## Classless CSS frameworks
 
-The admin includes presets for 48 classless CSS frameworks. Go to **Settings** and use the **Site Head** dropdown to insert one. The framework is applied to the public site only.
+The admin includes presets for 45 classless CSS frameworks. Go to **Settings** and use the **Site Head** dropdown to insert one. The framework is applied to the public site only.
 
 Available frameworks include Pico, Simple, MVP, Water, Sakura, Marx, new.css, Bamboo, Bolt, and many more. Each framework styles standard HTML elements without requiring CSS classes.
 

@@ -11,10 +11,11 @@ A lightweight, database-driven content management system built with Python. Full
 - **Media uploads** — local disk or S3-compatible storage with CDN support
 - **Markdown mounts** — serve directories of `.md` files as themed pages with file-based routing
 - **Authentication** — password login or OAuth2/OIDC with PKCE
-- **48 classless CSS framework presets** built in
+- **45 classless CSS framework presets** built in
 - **Stateless mode** for serverless and multi-instance deployments
 - **JinjaX components** — `<CollectionFeed>`, `<MediaImage>`, and custom components
 - **Admin interface** — HTMX-powered with live preview, syntax-highlighted editors, and drag reordering
+- **CSRF protection** on all mutating endpoints
 
 ## Stack
 
@@ -33,10 +34,11 @@ A lightweight, database-driven content management system built with Python. Full
 ```bash
 git clone https://github.com/itsnisuxyz/garden-cms.git
 cd garden-cms
+cp .env.example .env   # then edit .env and set SECRET_KEY + ADMIN_PASSWORD
 docker compose up -d
 ```
 
-The app is available at [http://localhost:8000](http://localhost:8000) and the admin at [http://localhost:8000/admin](http://localhost:8000/admin).
+The app runs migrations automatically on boot. It is available at [http://localhost:8000](http://localhost:8000) and the admin at [http://localhost:8000/admin](http://localhost:8000/admin).
 
 ### From source
 
@@ -51,10 +53,8 @@ uv sync
 Create a database and run migrations:
 
 ```bash
-createdb bussin
+createdb garden
 uv run piccolo migrations forwards db
-uv run piccolo migrations forwards user
-uv run piccolo migrations forwards session_auth
 ```
 
 Set an admin password and start the server:
@@ -66,26 +66,65 @@ uv run litestar run --reload
 
 ## Configuration
 
-Configuration is done via environment variables. Create a `.env` file:
+Configuration is via environment variables. Copy `.env.example` to `.env` and edit it.
+
+### Env var management with dotenvx
+
+For production, [dotenvx](https://dotenvx.com) is recommended for managing secrets. It encrypts `.env` files at rest and injects values at process start:
 
 ```bash
-DATABASE_URL=postgres://postgres:postgres@localhost:5432/bussin
-SECRET_KEY=change-me-to-a-random-string
-ADMIN_PASSWORD=your-password
+npm install -g dotenvx
+cp .env.example .env
+dotenvx set SECRET_KEY "$(openssl rand -hex 32)"
+dotenvx set ADMIN_PASSWORD "your-password"
+dotenvx run -- uv run litestar run --host 0.0.0.0
 ```
 
-| Variable         | Description                  | Default                                              |
-| ---------------- | ---------------------------- | ---------------------------------------------------- |
-| `DATABASE_URL`   | PostgreSQL connection string | `postgres://postgres:postgres@localhost:5432/bussin` |
-| `SECRET_KEY`     | Session encryption key       | `dev-secret-change-me`                               |
-| `ADMIN_PASSWORD` | Admin login password         | _(unset)_                                            |
-| `STATELESS`      | Reload from DB every request | `false`                                              |
+### Core variables
 
-See the [full configuration reference](https://yoursite.com/docs/configuration) for storage, OAuth, and all other settings.
+| Variable         | Description                              | Default                                              |
+| ---------------- | ---------------------------------------- | ---------------------------------------------------- |
+| `DATABASE_URL`   | PostgreSQL connection string             | `postgresql://postgres:postgres@localhost:5432/garden` |
+| `SECRET_KEY`     | Session/CSRF signing key (use ≥32 bytes) | `dev-secret-change-me` (dev only; **fails fast in prod**) |
+| `ADMIN_PASSWORD` | Admin login password                     | _(unset)_                                            |
+| `STATELESS`      | Reload from DB every request             | `false`                                              |
+| `DEBUG`          | Enable debug mode                        | `false`                                              |
+
+> **Warning:** If `SECRET_KEY` is unset or the dev default in a non-dev deployment (no `localhost` in `DATABASE_URL` and `DEBUG=false`), the app refuses to start. Generate a strong key with `openssl rand -hex 32`.
+
+### OAuth2 / OIDC
+
+| Variable              | Description                                  | Default     |
+| --------------------- | -------------------------------------------- | ----------- |
+| `OAUTH_CLIENT_ID`     | OAuth2/OIDC client ID                        | _(unset)_   |
+| `OAUTH_CLIENT_SECRET` | OAuth2/OIDC client secret                    | _(unset)_   |
+| `OAUTH_ISSUER_URL`    | OAuth provider issuer URL                    | _(unset)_   |
+| `OAUTH_REDIRECT_URI`  | OAuth callback URL                           | _(unset)_   |
+| `OAUTH_ALLOWED_GROUP` | Restrict admin access to this group          | _(unset)_   |
+| `OAUTH_PROVIDER_NAME` | Display name for the OAuth provider          | `oauth`     |
+
+> **Warning:** If `OAUTH_ALLOWED_GROUP` is empty, **any authenticated user** is granted admin access. Always set it in production.
+
+### Storage
+
+Configurable in the admin Settings page or via env vars (env vars are the fallback when no DB setting exists).
+
+| Variable               | Description                             | Default     |
+| ---------------------- | --------------------------------------- | ----------- |
+| `STORAGE_BACKEND`      | `local` or `s3`                         | `local`     |
+| `S3_BUCKET`            | S3-compatible bucket name               | _(unset)_   |
+| `S3_REGION`            | S3 region                               | `us-east-1` |
+| `S3_ENDPOINT_URL`      | Custom S3 endpoint (R2, MinIO)          | _(unset)_   |
+| `S3_ACCESS_KEY_ID`     | S3 access key                           | _(unset)_   |
+| `S3_SECRET_ACCESS_KEY` | S3 secret key (write-only in the admin) | _(unset)_   |
+| `S3_PREFIX`            | Object key prefix                       | _(unset)_   |
+| `S3_PUBLIC_URL`        | Public CDN URL for direct media serving | _(unset)_   |
+
+See the [full configuration reference](data/md/docs/configuration.md) for all settings.
 
 ## Documentation
 
-Documentation is included in `data/md/docs/` and served by the application itself when mounted at `/docs` in the admin Markdown section.
+Documentation is included in `data/md/docs/` and served by the application itself when the `docs` markdown mount is configured in the admin.
 
 ## Development
 
