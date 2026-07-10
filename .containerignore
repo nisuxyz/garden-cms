@@ -4,7 +4,15 @@ __pycache__
 .git
 .gitignore
 .env
+.env.*
+!.env.example
 .pytest_cache
 docs/
 tests/
 *.egg-info
+data/site.db/
+data/media/
+scripts/snapshots/
+.claudine/
+.claude/
+*.tmp

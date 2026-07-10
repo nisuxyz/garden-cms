@@ -6,8 +6,8 @@ services:
     ports:
       - "8000:8000"
     environment:
-      DATABASE_URL: postgres://garden:garden@db:5432/garden
-      SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
+      DATABASE_URL: postgresql://garden:garden@db:5432/garden
+      SECRET_KEY: ${SECRET_KEY:?SECRET_KEY must be set — see .env.example}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
       STATELESS: ${STATELESS:-}
       OAUTH_CLIENT_ID: ${OAUTH_CLIENT_ID:-}

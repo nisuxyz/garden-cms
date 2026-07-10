@@ -83,11 +83,12 @@
           type="button"
           class="outline secondary"
           style="font-size: 0.8rem; padding: 0.25rem 0.5rem"
-          onclick="(function(el){
-            var editor = document.querySelector('[data-target=&quot;value-{{ block.id }}&quot;]');
+          data-filename="{{ mf.filename }}"
+          data-block-id="{{ block.id }}"
+          onclick="(function(btn){
+            var editor = document.querySelector('[data-target=value-' + btn.dataset.blockId + ']');
             if(editor && editor._jar){
-              var pos = editor.textContent.length;
-              var snippet = '<img src={{ '"{{' }} media_url(&quot;{{ mf.filename }}&quot;) {{ '}}"' }}>';
+              var snippet = '<img src={{ '"{{' }} media_url(' + JSON.stringify(btn.dataset.filename) + ') {{ '}}"' }}>';
               editor._jar.updateCode(editor.textContent + snippet);
             }
           })(this)"
