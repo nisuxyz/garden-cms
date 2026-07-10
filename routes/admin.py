@@ -325,8 +325,14 @@ async def pages_reorder(
         return Redirect(path="/admin/pages")
 
     a, b = rows[idx], rows[swap_idx]
-    await Page.update({Page.nav_order: b["nav_order"]}).where(Page.id == a["id"])
-    await Page.update({Page.nav_order: a["nav_order"]}).where(Page.id == b["id"])
+    # Swap nav_order atomically so a mid-swap failure can't leave both
+    # rows pointing at the same order (which would silently reorder the
+    # page list on next render).
+    from piccolo_conf import DB  # noqa: WPS433 — deferred import
+
+    async with DB.transaction():
+        await Page.update({Page.nav_order: b["nav_order"]}).where(Page.id == a["id"])
+        await Page.update({Page.nav_order: a["nav_order"]}).where(Page.id == b["id"])
     if request.htmx:
         return ClientRedirect(redirect_to="/admin/pages")
     return Redirect(path="/admin/pages")
@@ -406,13 +412,17 @@ async def collections_list() -> Template:
         .order_by(Collection.name)
         
     )
-    # Add item counts.
-    for row in rows:
-        count = await (
-            CollectionItem.count()
-            .where(CollectionItem.collection == row["id"])
+    # Batch item counts in a single query instead of N+1 round-trips.
+    if rows:
+        counts = await CollectionItem.raw(
+            "SELECT collection AS id, COUNT(*) AS n "
+            "FROM collection_items GROUP BY collection"
         )
-        row["item_count"] = count
+        counts_map = {c["id"]: c["n"] for c in counts}
+    else:
+        counts_map = {}
+    for row in rows:
+        row["item_count"] = counts_map.get(row["id"], 0)
     return Template(template_name="admin/collections.html", context={"collections": rows})
 
 
@@ -690,8 +700,11 @@ async def items_reorder(
         return Redirect(path=path)
 
     a, b = rows[idx], rows[swap_idx]
-    await CollectionItem.update({CollectionItem.sort_order: b["sort_order"]}).where(CollectionItem.id == a["id"])
-    await CollectionItem.update({CollectionItem.sort_order: a["sort_order"]}).where(CollectionItem.id == b["id"])
+    from piccolo_conf import DB  # noqa: WPS433 — deferred import
+
+    async with DB.transaction():
+        await CollectionItem.update({CollectionItem.sort_order: b["sort_order"]}).where(CollectionItem.id == a["id"])
+        await CollectionItem.update({CollectionItem.sort_order: a["sort_order"]}).where(CollectionItem.id == b["id"])
     if request.htmx:
         return ClientRedirect(redirect_to=path)
     return Redirect(path=path)

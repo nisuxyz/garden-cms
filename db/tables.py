@@ -1,6 +1,6 @@
 # db/tables.py
 """Piccolo ORM table definitions for the generic CMS."""
-from datetime import datetime
+from datetime import datetime, timezone
 
 from piccolo.columns import (
     JSON,
@@ -12,6 +12,17 @@ from piccolo.columns import (
     Varchar,
 )
 from piccolo.table import Table
+
+
+def _utcnow() -> datetime:
+    """Tz-aware UTC 'now' used for ``auto_update`` callbacks.
+
+    The previous ``Timestamptz(auto_update=datetime.now)`` produced naive
+    local-time datetimes that Postgres silently interpreted as UTC — fine on
+    UTC hosts, off by the local offset elsewhere. Returning a tz-aware UTC
+    datetime keeps the stored value correct regardless of host timezone.
+    """
+    return datetime.now(timezone.utc)
 
 
 # ── Theming ────────────────────────────────────────────────
@@ -26,7 +37,7 @@ class Theme(Table, tablename="themes"):
     css = Text(default="")
     active = Boolean(default=False)
     created_at = Timestamptz()
-    updated_at = Timestamptz(auto_update=datetime.now)
+    updated_at = Timestamptz(auto_update=_utcnow)
 
 
 # ── Pages ──────────────────────────────────────────────────
@@ -45,7 +56,7 @@ class Page(Table, tablename="pages"):
     published = Boolean(default=False)
     theme = ForeignKey(references=Theme, null=True, default=None)
     created_at = Timestamptz()
-    updated_at = Timestamptz(auto_update=datetime.now)
+    updated_at = Timestamptz(auto_update=_utcnow)
 
 
 # ── Content blocks ─────────────────────────────────────────
@@ -59,7 +70,7 @@ class ContentBlock(Table, tablename="content_blocks"):
     block_type = Varchar(length=50, default="text")  # text | html | image
     value = Text(default="")
     created_at = Timestamptz()
-    updated_at = Timestamptz(auto_update=datetime.now)
+    updated_at = Timestamptz(auto_update=_utcnow)
 
 
 # ── Collections ────────────────────────────────────────────
@@ -77,7 +88,7 @@ class Collection(Table, tablename="collections"):
     empty_template = Text(default="")  # HTML shown when collection has 0 items
     items_per_page = Integer(default=10)
     created_at = Timestamptz()
-    updated_at = Timestamptz(auto_update=datetime.now)
+    updated_at = Timestamptz(auto_update=_utcnow)
 
 
 class CollectionItem(Table, tablename="collection_items"):
@@ -91,7 +102,7 @@ class CollectionItem(Table, tablename="collection_items"):
     featured = Boolean(default=False)
     sort_order = Integer(default=0)
     created_at = Timestamptz()
-    updated_at = Timestamptz(auto_update=datetime.now)
+    updated_at = Timestamptz(auto_update=_utcnow)
 
 
 class CollectionItemSlugHistory(Table, tablename="collection_item_slug_history"):
@@ -126,4 +137,4 @@ class SiteSettings(Table, tablename="site_settings"):
 
     key = Varchar(length=255, unique=True, required=True)
     value = Text(default="")
-    updated_at = Timestamptz(auto_update=datetime.now)
+    updated_at = Timestamptz(auto_update=_utcnow)
