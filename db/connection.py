@@ -148,7 +148,7 @@ _DEFAULT_CONTENT_BLOCKS = [
     ("resume.experience", "Resume Experience", "html", "<h2>Experience</h2>\n\n<p><em>Add your experience here.</em></p>"),
     ("resume.education", "Resume Education", "html", "<h2>Education</h2>\n\n<p><em>Add your education here.</em></p>"),
     ("resume.skills", "Resume Skills", "html", "<h2>Skills</h2>\n\n<p><em>Add your skills here.</em></p>"),
-    ("contact.intro", "Contact Intro", "html", "Have a question or want to say hello? Fill out the form below."),
+    ("contact.intro", "Contact Intro", "html", "Have a question or want to say hello?"),
 ]
 
 _BLOG_CARD_TEMPLATE = """\
@@ -225,23 +225,7 @@ _CONTACT_PAGE = """\
 <h1>Contact</h1>
 <p>{{ site["contact.intro"] }}</p>
 
-<form method="post" action="/contact" hx-post="/contact" hx-target="#contact-area" hx-swap="innerHTML">
-  <div id="contact-area">
-    <label>
-      Name
-      <input type="text" name="name" required />
-    </label>
-    <label>
-      Email
-      <input type="email" name="email" required />
-    </label>
-    <label>
-      Message
-      <textarea name="message" rows="5" required></textarea>
-    </label>
-    <button type="submit">Send</button>
-  </div>
-</form>
+<p><em>A contact-form handler is not configured for this site.</em></p>
 """
 
 
