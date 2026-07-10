@@ -62,6 +62,7 @@ class LocalStorageBackend(StorageBackend):
     async def save(self, filename: str, data: bytes, content_type: str) -> str:
         self.root.mkdir(parents=True, exist_ok=True)
         dest = self._safe_path(filename)
+        dest.parent.mkdir(parents=True, exist_ok=True)
         dest.write_bytes(data)
         return str(dest)
 
