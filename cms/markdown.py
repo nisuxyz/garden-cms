@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import re
+import threading
 from pathlib import Path
 
 import markdown as md
@@ -18,7 +19,12 @@ from db.tables import SiteSettings
 
 _MD_ROOT = Path("data/md")
 
+# A single module-level Markdown instance is reused for performance, but
+# ``md.Markdown`` carries per-conversion state (the TOC extension especially)
+# so concurrent renders from the worker thread would interleave. Guard every
+# reset()/convert() pair with a re-entrant lock.
 _md_converter = md.Markdown(extensions=["fenced_code", "tables", "toc"])
+_md_converter_lock = threading.Lock()
 
 _HEADING_RE = re.compile(r"^#\s+(.+)", re.MULTILINE)
 
@@ -75,8 +81,9 @@ def resolve_md_file(mount_dir: str, sub_path: str) -> tuple[str, str, str | None
     m = _HEADING_RE.search(source)
     title = m.group(1).strip() if m else target.stem.replace("-", " ").title()
 
-    _md_converter.reset()
-    html = _md_converter.convert(source)
+    with _md_converter_lock:
+        _md_converter.reset()
+        html = _md_converter.convert(source)
 
     # Find nearest _layout.jinja walking up to the mount root.
     layout_source = _find_layout(target.parent, safe_root)

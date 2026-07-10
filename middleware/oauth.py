@@ -3,12 +3,15 @@
 
 from __future__ import annotations
 
+import logging
 import os
 from typing import Any
 
 import httpx
 from authlib.common.security import generate_token
 from authlib.integrations.httpx_client import AsyncOAuth2Client
+
+_log = logging.getLogger(__name__)
 
 # ── Configuration from environment ────────────────────────
 
@@ -18,6 +21,19 @@ OAUTH_ISSUER_URL: str = os.getenv("OAUTH_ISSUER_URL", "").rstrip("/")
 OAUTH_REDIRECT_URI: str = os.getenv("OAUTH_REDIRECT_URI", "")
 OAUTH_ALLOWED_GROUP: str = os.getenv("OAUTH_ALLOWED_GROUP", "")
 OAUTH_SCOPE: str = os.getenv("OAUTH_SCOPE", "openid profile email groups")
+
+# Network operations against the IdP should never hang indefinitely.
+_OAUTH_TIMEOUT = httpx.Timeout(10.0, connect=5.0)
+
+# Warn loudly once if OAuth is configured without an allowed-group restriction
+# — that ships a default-admin posture where anyone who can authenticate
+# against the issuer becomes a CMS admin.
+if OAUTH_CLIENT_ID and not OAUTH_ALLOWED_GROUP:
+    _log.warning(
+        "OAUTH_ALLOWED_GROUP is empty — any user who can authenticate against "
+        "%s will be granted admin access. Set OAUTH_ALLOWED_GROUP to restrict.",
+        OAUTH_ISSUER_URL,
+    )
 
 # Cached OIDC discovery document
 _oidc_config: dict[str, Any] | None = None
@@ -35,8 +51,8 @@ async def _discover_oidc() -> dict[str, Any]:
         return _oidc_config
 
     url = f"{OAUTH_ISSUER_URL}/.well-known/openid-configuration"
-    async with httpx.AsyncClient() as client:
-        resp = await client.get(url, timeout=10)
+    async with httpx.AsyncClient(timeout=_OAUTH_TIMEOUT) as client:
+        resp = await client.get(url)
         resp.raise_for_status()
         _oidc_config = resp.json()
     return _oidc_config
@@ -60,6 +76,7 @@ async def get_authorization_url() -> tuple[str, str, str]:
         redirect_uri=OAUTH_REDIRECT_URI,
         scope=OAUTH_SCOPE,
         code_challenge_method="S256",
+        timeout=_OAUTH_TIMEOUT,
     )
 
     url, _state = client.create_authorization_url(
@@ -93,6 +110,7 @@ async def exchange_code(
         client_secret=OAUTH_CLIENT_SECRET or None,
         redirect_uri=OAUTH_REDIRECT_URI,
         code_challenge_method="S256",
+        timeout=_OAUTH_TIMEOUT,
     ) as client:
         await client.fetch_token(
             token_endpoint,
@@ -108,9 +126,10 @@ async def exchange_code(
 def check_group_membership(userinfo: dict[str, Any]) -> bool:
     """Check whether the user belongs to the required group.
 
-    If ``OAUTH_ALLOWED_GROUP`` is not set, any authenticated user is allowed.
-    The ``groups`` claim is expected to be a list of group dicts with a
-    ``name`` key (Pocket ID format) or a plain list of strings.
+    If ``OAUTH_ALLOWED_GROUP`` is not set, any authenticated user is allowed
+    (a warning is logged at import time). The ``groups`` claim is expected
+    to be a list of group dicts with a ``name`` key (Pocket ID format) or a
+    plain list of strings.
     """
     required = OAUTH_ALLOWED_GROUP
     if not required:

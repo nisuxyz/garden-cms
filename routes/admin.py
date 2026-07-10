@@ -997,11 +997,10 @@ async def preview(
 
     Used by the CodeJar live-preview iframe in edit pages.
     """
-    print("Received preview request with data:", data, data.keys())
     source = (data.get("source") or "").strip()
     preview_type = (data.get("type") or "page").strip()
 
-    print(f"Preview request: type={preview_type}, source={source[:100]}...")
+    _log.debug("preview request: type=%s, source_len=%d", preview_type, len(source))
 
     try:
         _sample_item = {

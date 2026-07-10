@@ -34,7 +34,10 @@ _main_loop: ContextVar[asyncio.AbstractEventLoop | None] = ContextVar(
 
 def provide_catalog() -> jinjax.Catalog:
     """Litestar DI provider — returns the initialised JinjaX catalog."""
-    assert catalog is not None, "init_catalog() must be called before providing catalog"
+    if catalog is None:
+        raise RuntimeError(
+            "init_catalog() must be called before the catalog can be provided"
+        )
     return catalog
 
 
@@ -50,6 +53,10 @@ async def fetch_collection_async(
     Used by both the JinjaX ``<CollectionFeed>`` component (via sync
     wrapper) and the HTMX pagination endpoint in ``cms/engine.py``.
     """
+    # Clamp page to >=1 so a caller-supplied huge/negative page doesn't
+    # cause a huge OFFSET (cheap-ish DoS) or negative offset.
+    page = max(1, int(page or 1))
+
     col = (
         await Collection.select()
         .where(Collection.slug == slug)

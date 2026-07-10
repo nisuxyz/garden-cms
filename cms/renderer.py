@@ -74,7 +74,14 @@ def unpack_item_data(item: dict[str, Any]) -> dict[str, Any]:
     """Unpack JSON ``data`` field into top-level keys for template access."""
     data = item.get("data", {})
     if isinstance(data, str):
-        data = json.loads(data) if data else {}
+        try:
+            data = json.loads(data) if data else {}
+        except (json.JSONDecodeError, TypeError):
+            # Malformed JSON in the data column — degrade to empty dict
+            # rather than surfacing a 500 mid-render.
+            data = {}
+    if not isinstance(data, dict):
+        data = {}
     merged = {**item}
     for k, v in data.items():
         if k not in merged:

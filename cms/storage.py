@@ -137,10 +137,24 @@ class S3StorageBackend(StorageBackend):
             kwargs["aws_secret_access_key"] = self.secret_access_key
         return kwargs
 
-    async def save(self, filename: str, data: bytes, content_type: str) -> str:
+    # A single aioboto3 Session is reused across operations so we don't
+    # pay for client/credential discovery on every request. The async
+    # client context managers below still create per-call connections,
+    # but they share the session's credential cache.
+    _session = None
+    _session_kwargs_cache: dict | None = None
+
+    def _get_session(self):
         import aioboto3
 
-        session = aioboto3.Session()
+        kwargs = self._session_kwargs()
+        if self._session is None or self._session_kwargs_cache != kwargs:
+            self._session = aioboto3.Session()
+            self._session_kwargs_cache = kwargs
+        return self._session
+
+    async def save(self, filename: str, data: bytes, content_type: str) -> str:
+        session = self._get_session()
         async with session.client("s3", **self._session_kwargs()) as s3:
             await s3.put_object(
                 Bucket=self.bucket,
@@ -152,9 +166,7 @@ class S3StorageBackend(StorageBackend):
         return self._key(filename)
 
     async def delete(self, filename: str) -> None:
-        import aioboto3
-
-        session = aioboto3.Session()
+        session = self._get_session()
         async with session.client("s3", **self._session_kwargs()) as s3:
             await s3.delete_object(Bucket=self.bucket, Key=self._key(filename))
 
@@ -166,9 +178,7 @@ class S3StorageBackend(StorageBackend):
 
     async def get_object(self, filename: str) -> tuple[bytes, str]:
         """Download an object — used by the media proxy route."""
-        import aioboto3
-
-        session = aioboto3.Session()
+        session = self._get_session()
         async with session.client("s3", **self._session_kwargs()) as s3:
             resp = await s3.get_object(Bucket=self.bucket, Key=self._key(filename))
             body = await resp["Body"].read()

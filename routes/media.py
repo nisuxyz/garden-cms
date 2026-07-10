@@ -21,11 +21,7 @@ async def serve_media(filename: str) -> Response | Redirect:
     """Return the requested media file from the active storage backend."""
     backend = get_backend()
     filename = filename.strip("/")
-    log.info("serve_media: backend=%s, filename=%s", type(backend).__name__, filename)
-
-    if isinstance(backend, S3StorageBackend):
-        key = backend._key(filename)
-        log.info("S3 lookup: bucket=%s, key=%s, prefix=%r", backend.bucket, key, backend.prefix)
+    log.debug("serve_media: backend=%s, filename=%s", type(backend).__name__, filename)
 
     # If the S3 backend has a public URL, redirect there directly.
     if isinstance(backend, S3StorageBackend) and backend.public_url:
@@ -33,7 +29,9 @@ async def serve_media(filename: str) -> Response | Redirect:
 
     try:
         body, content_type = await backend.get_object(filename)
-    except Exception as exc:
+    except FileNotFoundError:
+        raise NotFoundException(detail="Media file not found")
+    except Exception as exc:  # noqa: BLE001 — surface a 404 to clients for any backend miss
         log.error("serve_media failed for %s: %s", filename, exc)
         raise NotFoundException(detail="Media file not found")
 
