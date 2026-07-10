@@ -7,6 +7,7 @@
   method="post"
   action="{% if page %}/admin/pages/{{ page.id }}/edit{% else %}/admin/pages{% endif %}"
 >
+  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}" />
   <label>
       Title
       <input

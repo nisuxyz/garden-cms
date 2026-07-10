@@ -9,6 +9,7 @@
 <p><ins>Mounts saved.</ins></p>
 {% endif %} {% if dirs %}
 <form method="post" action="/admin/md-mounts">
+  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}" />
   <div class="table-scroll">
   <table>
     <thead>

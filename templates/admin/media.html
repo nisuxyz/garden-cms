@@ -9,6 +9,7 @@
     action="/admin/media/upload"
     enctype="multipart/form-data"
   >
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}" />
     <label>
         File
         <input

@@ -9,6 +9,7 @@
 <details>
   <summary>Add new block</summary>
   <form method="post" action="/admin/content">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}" />
     <label>
       Key
       <input
@@ -54,6 +55,7 @@
     hx-swap="outerHTML"
     hx-indicator="#save-btn-{{ block.id }}"
   >
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}" />
     {% if block.block_type == "html" %}
     <textarea id="value-{{ block.id }}" name="value" rows="5" hidden>
 {{ block.value }}</textarea

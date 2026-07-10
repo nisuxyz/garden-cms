@@ -9,6 +9,7 @@ block admin_content %}
 {% endif %}
 
 <form method="post" action="/admin/settings">
+  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}" />
   <h3>Media Storage</h3>
 
   <label>

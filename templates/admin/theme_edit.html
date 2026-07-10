@@ -6,6 +6,7 @@ else %}New Theme{% endif %}{% endblock %} {% block admin_content %}
   method="post"
   action="{% if theme %}/admin/themes/{{ theme.id }}/edit{% else %}/admin/themes{% endif %}"
 >
+  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}" />
   <label>
     Name
     <input

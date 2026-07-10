@@ -10,6 +10,7 @@ admin_content %}
   method="post"
   action="{% if item %}/admin/collections/{{ collection.id }}/items/{{ item.id }}/edit{% else %}/admin/collections/{{ collection.id }}/items{% endif %}"
 >
+  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}" />
   <label>
     Title
     <input

@@ -5,6 +5,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 from litestar import Litestar, Request, Response
+from litestar.config.csrf import CSRFConfig
 from litestar.contrib.jinja import JinjaTemplateEngine
 from litestar.di import Provide
 from litestar.exceptions import NotAuthorizedException
@@ -51,6 +52,22 @@ if _secret in ("", _DEFAULT_SECRET) and not _is_dev:
 session_config = CookieBackendConfig(secret=_secret_bytes)  # type: ignore[arg-type]
 
 
+# ── CSRF middleware ────────────────────────────────────────
+
+# Reuse the configured SECRET_KEY to sign CSRF tokens. The cookie is readable
+# by JS (httponly=False) so HTMX can grab it and send it back as the
+# ``x-csrftoken`` header on every mutating request; HTML forms additionally
+# carry the token in a hidden ``_csrf_token`` field (Litestar's CSRFMiddleware
+# checks both header and url-encoded body field).
+csrf_config = CSRFConfig(
+    secret=_secret,
+    cookie_name="csrftoken",
+    header_name="x-csrftoken",
+    cookie_samesite="lax",
+    cookie_httponly=False,
+)
+
+
 # ── Security headers hook ─────────────────────────────────
 
 async def add_security_headers(response: Response) -> Response:
@@ -90,6 +107,7 @@ app = Litestar(
     ),
     static_files_config=_static_configs,
     middleware=[session_config.middleware],
+    csrf_config=csrf_config,
     plugins=[HTMXPlugin()],
     exception_handlers={NotAuthorizedException: _handle_not_authorized},
     after_request=add_security_headers,

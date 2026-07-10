@@ -167,6 +167,14 @@ head %}
 </style>
 {% endblock %}
 {% block body %}
+{# Attach the CSRF token from the csrftoken cookie to every outbound HTMX
+   request so hx-post/hx-delete/etc. pass validation. #}
+<script>
+  document.body.addEventListener("htmx:configRequest", function (evt) {
+    var m = document.cookie.match(/(?:^|;)\s*csrftoken=([^;]+)/);
+    if (m) evt.detail.headers["x-csrftoken"] = m[1];
+  });
+</script>
 <header>
   <nav>
     <ul>
