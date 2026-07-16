@@ -51,9 +51,10 @@ async def _render_preview_themed(
     theme = await Theme.select().where(Theme.active.eq(True)).first()
     if not theme:
         return content_html
-    from cms.engine import get_nav_items, _get_site_head
+    from cms.engine import get_nav_items, _get_site_head, _css_framework_html
     nav = await get_nav_items()
     site_head = await _get_site_head()
+    css_framework_html = _css_framework_html(theme.get("css_framework"))
     return await render_themed(
         base_template=theme["base_template"],
         css=css_override if css_override is not None else theme.get("css", ""),
@@ -61,6 +62,8 @@ async def _render_preview_themed(
         content_html=content_html,
         nav_items=nav,
         site_head=site_head,
+        theme_site_head=theme.get("site_head", ""),
+        css_framework_html=css_framework_html,
     )
 from middleware.oauth import (
     check_group_membership,
@@ -182,12 +185,14 @@ async def dashboard() -> Template:
     page_count = len(await Page.select(Page.id).output(as_list=True))
     block_count = len(await ContentBlock.select(ContentBlock.id).output(as_list=True))
     collection_count = len(await Collection.select(Collection.id).output(as_list=True))
+    media_count = len(await MediaFile.select(MediaFile.id).output(as_list=True))
     return Template(
         template_name="admin/dashboard.html",
         context={
             "page_count": page_count,
             "block_count": block_count,
             "collection_count": collection_count,
+            "media_count": media_count,
         },
     )
 
@@ -206,9 +211,24 @@ async def pages_list() -> Template:
     return Template(template_name="admin/pages.html", context={"pages": rows})
 
 
+async def _theme_choices() -> list[dict]:
+    """Themes for the per-page theme-override dropdown (id + name)."""
+    return await Theme.select(Theme.id, Theme.name).order_by(Theme.name)
+
+
+def _theme_from_form(data: dict) -> int | None:
+    """Parse the optional per-page theme override. Blank → None (use the
+    site's active theme)."""
+    raw = (data.get("theme") or "").strip()
+    return int(raw) if raw.isdigit() else None
+
+
 @get("/pages/new")
 async def pages_new() -> Template:
-    return Template(template_name="admin/page_edit.html", context={"page": None})
+    return Template(
+        template_name="admin/page_edit.html",
+        context={"page": None, "themes": await _theme_choices()},
+    )
 
 
 @post("/pages")
@@ -222,6 +242,7 @@ async def pages_create(
     is_homepage = data.get("is_homepage") == "on"
     show_in_nav = data.get("show_in_nav") == "on"
     published = data.get("published") == "on"
+    theme = _theme_from_form(data)
 
     # Auto-assign nav_order to end of list.
     max_row = await Page.raw("SELECT COALESCE(MAX(nav_order), -1) AS mx FROM pages")
@@ -239,6 +260,7 @@ async def pages_create(
         show_in_nav=show_in_nav,
         nav_order=nav_order,
         published=published,
+        theme=theme,
     ).save()
     return Redirect(path="/admin/pages")
 
@@ -248,7 +270,10 @@ async def pages_edit(page_id: int) -> Template:
     row = await Page.select().where(Page.id == page_id).first()
     if not row:
         raise NotFoundException()
-    return Template(template_name="admin/page_edit.html", context={"page": row})
+    return Template(
+        template_name="admin/page_edit.html",
+        context={"page": row, "themes": await _theme_choices()},
+    )
 
 
 @post("/pages/{page_id:int}/edit")
@@ -267,6 +292,7 @@ async def pages_update(
     is_homepage = data.get("is_homepage") == "on"
     show_in_nav = data.get("show_in_nav") == "on"
     published = data.get("published") == "on"
+    theme = _theme_from_form(data)
 
     if is_homepage:
         await Page.update({Page.is_homepage: False}).where(
@@ -282,6 +308,7 @@ async def pages_update(
             Page.is_homepage: is_homepage,
             Page.show_in_nav: show_in_nav,
             Page.published: published,
+            Page.theme: theme,
             Page.updated_at: datetime.now(timezone.utc),
         }
     ).where(Page.id == page_id)
@@ -737,6 +764,7 @@ _SETTINGS_KEYS = [
     "favicon",
     "logo",
     "site_head",
+    "status_page",
 ]
 
 
@@ -745,13 +773,23 @@ async def _get_settings_dict() -> dict[str, str]:
     return {r["key"]: r.get("value", "") or "" for r in rows}
 
 
+async def _get_pages_list() -> list[dict]:
+    """Return published pages for the status-page picker."""
+    return await (
+        Page.select(Page.title, Page.slug)
+        .where(Page.published.eq(True))
+        .order_by(Page.title)
+    )
+
+
 @get("/settings")
 async def settings_page() -> Template:
     settings = await _get_settings_dict()
     media_files = await _get_media_list()
+    pages = await _get_pages_list()
     return Template(
         template_name="admin/settings.html",
-        context={"settings": settings, "saved": False, "error": None, "media_files": media_files, "css_frameworks": CSS_FRAMEWORKS, "stateless": STATELESS},
+        context={"settings": settings, "saved": False, "error": None, "media_files": media_files, "css_frameworks": CSS_FRAMEWORKS, "pages": pages, "stateless": STATELESS},
     )
 
 
@@ -797,7 +835,7 @@ async def settings_save(
 
     return Template(
         template_name="admin/settings.html",
-        context={"settings": settings, "saved": error is None, "error": error, "css_frameworks": CSS_FRAMEWORKS, "media_files": await _get_media_list(), "stateless": STATELESS},
+        context={"settings": settings, "saved": error is None, "error": error, "css_frameworks": CSS_FRAMEWORKS, "media_files": await _get_media_list(), "pages": await _get_pages_list(), "stateless": STATELESS},
     )
 
 
@@ -910,7 +948,10 @@ async def themes_list() -> Template:
 
 @get("/themes/new")
 async def themes_new() -> Template:
-    return Template(template_name="admin/theme_edit.html", context={"theme": None})
+    return Template(
+        template_name="admin/theme_edit.html",
+        context={"theme": None, "css_frameworks": CSS_FRAMEWORKS},
+    )
 
 
 @post("/themes")
@@ -921,13 +962,16 @@ async def themes_create(
     slug = (data.get("slug") or "").strip()
     base_template = (data.get("base_template") or "").strip()
     css = (data.get("css") or "").strip()
+    css_framework = (data.get("css_framework") or "pico").strip()
+    site_head = (data.get("site_head") or "").strip()
     active = data.get("active") == "on"
 
     if active:
         await Theme.update({Theme.active: False}).where(Theme.active.eq(True))
 
     await Theme(
-        name=name, slug=slug, base_template=base_template, css=css, active=active,
+        name=name, slug=slug, base_template=base_template, css=css,
+        css_framework=css_framework, site_head=site_head, active=active,
     ).save()
     return Redirect(path="/admin/themes")
 
@@ -937,7 +981,10 @@ async def themes_edit(theme_id: int) -> Template:
     row = await Theme.select().where(Theme.id == theme_id).first()
     if not row:
         raise NotFoundException()
-    return Template(template_name="admin/theme_edit.html", context={"theme": row})
+    return Template(
+        template_name="admin/theme_edit.html",
+        context={"theme": row, "css_frameworks": CSS_FRAMEWORKS},
+    )
 
 
 @post("/themes/{theme_id:int}/edit")
@@ -953,6 +1000,8 @@ async def themes_update(
     slug = (data.get("slug") or "").strip()
     base_template = (data.get("base_template") or "").strip()
     css = (data.get("css") or "").strip()
+    css_framework = (data.get("css_framework") or "pico").strip()
+    site_head = (data.get("site_head") or "").strip()
     active = data.get("active") == "on"
 
     if active:
@@ -966,6 +1015,8 @@ async def themes_update(
             Theme.slug: slug,
             Theme.base_template: base_template,
             Theme.css: css,
+            Theme.css_framework: css_framework,
+            Theme.site_head: site_head,
             Theme.active: active,
             Theme.updated_at: datetime.now(timezone.utc),
         }

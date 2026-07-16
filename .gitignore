@@ -22,3 +22,12 @@ docs/
 # Agent / session state
 .claudine/
 .claude/
+
+# Review artifacts (theme screenshots) and one-off dev/debug scripts
+screenshots/
+scripts/debug_*.py
+scripts/clear_site_head.py
+scripts/reset_themes.py
+scripts/seed_themes.py
+scripts/take_screenshots.py
+scripts/screenshot_nightshade.py

@@ -4,30 +4,24 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="light dark" />
-    {# <script>
-      (function () {
-        var saved = localStorage.getItem("theme");
-        if (saved !== "light" && saved !== "dark") {
-          saved = window.matchMedia("(prefers-color-scheme: dark)").matches
-            ? "dark"
-            : "light";
-        }
-        document.documentElement.setAttribute("data-theme", saved);
-      })();
-    </script> #}
     <title>
-      {% block title %}{{ title | default("garden cms", true) }}{% endblock %}
+      {% block title %}{{ title | default("Garden CMS", true) }}{% endblock %}
     </title>
-    {# <link
-      rel="stylesheet"
-      href="{{ css_framework_url | default('https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.classless.min.css') }}"
-    /> #}
-    <link rel="icon" href="/favicon.ico" />
-    <script src="https://cdn.jsdelivr.net/npm/htmx.org@next" defer></script>
-    {% block admin_head %}{{ extra_admin_head | default("<link
-      rel=\"stylesheet\"
-      href=\"https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.classless.min.css\"
-    />", true) | safe }}{% endblock %}
+    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml" />
+    {# Configure htmx before it loads. The withCredentials flag is
+       essential — without it, htmx 2.x omits cookies on its XHR
+       requests and every htmx POST is rejected by Litestar's CSRF
+       middleware with a 403. The dist/htmx.min.js path is used so
+       the IIFE-only bundle loads (the package root has an ESM
+       export that browsers reject when loaded as a plain script). #}
+    <meta name="htmx-config" content='{"withCredentials":true}' />
+    <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.4/dist/htmx.min.js" defer></script>
+    {# Theme-independent head. For public themed renders, render_themed
+       always sets extra_admin_head (CSS framework + site Site Head),
+       even to "" when the framework is "none". For admin pages (which
+       don't set it at all) fall back to the built-in Pico classless
+       link so the admin UI always has its base framework. #}
+    {% block admin_head %}{%- if extra_admin_head is defined -%}{{ extra_admin_head | safe }}{%- else -%}<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.classless.min.css" />{%- endif -%}{% endblock %}
     {% block head %}{{ extra_head | default("", true) }}{% endblock %}
   </head>
   <body>

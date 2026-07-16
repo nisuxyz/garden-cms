@@ -116,7 +116,14 @@ def _media_url(filename: str) -> str:
 
 
 def init_catalog(jinja_env: Environment) -> jinjax.Catalog:
-    """Register JinjaX on *jinja_env* and return the configured Catalog."""
+    """Register JinjaX on *jinja_env* and return the configured Catalog.
+
+    The catalog creates its own internal env with the JinjaX extension
+    installed, but the env passed in here is what Litestar actually
+    uses to render admin templates. Without explicitly installing
+    the extension on it, components like <StatusBadge> render as
+    literal text in admin output.
+    """
     global catalog
 
     catalog = jinjax.Catalog(
@@ -132,6 +139,12 @@ def init_catalog(jinja_env: Environment) -> jinjax.Catalog:
     # The catalog env needs the filesystem loader so {% extends %} works.
     if jinja_env.loader and not cat_env.loader:
         cat_env.loader = jinja_env.loader
+
+    # Install the JinjaX extension on Litestar's env too, so admin
+    # templates (rendered directly by Litestar's Template() responses)
+    # recognise <StatusBadge>, <Icon>, <EmptyState>, etc.
+    from jinjax.jinjax import JinjaX
+    jinja_env.add_extension(JinjaX)
 
     # Share the catalog's env with the renderer module.
     _renderer._jinja_env = cat_env

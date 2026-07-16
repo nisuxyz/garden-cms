@@ -108,6 +108,13 @@ def _build_http_app() -> "Litestar":
     from routes.api import api_router
     from routes.media import media_router
     from routes.pages import favicon, pages_router
+    from litestar.exceptions import (
+        HTTPException,
+        NotAuthorizedException,
+        NotFoundException,
+    )
+    from litestar.response import Redirect
+    from cms.errors import render_status_page
 
     secret = _os.getenv("SECRET_KEY") or "dev-secret-change-me"
     secret_bytes = hashlib.sha256(secret.encode()).digest()
@@ -119,6 +126,12 @@ def _build_http_app() -> "Litestar":
         response.headers["X-XSS-Protection"] = "1; mode=block"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         return response
+
+    def _handle_not_authorized(request, exc):
+        redirect_to = "/admin/login"
+        if isinstance(exc.extra, dict):
+            redirect_to = exc.extra.get("redirect_to", redirect_to)
+        return Redirect(path=redirect_to)
 
     return Litestar(
         route_handlers=[media_router, favicon, pages_router, api_router, admin_router],
@@ -136,6 +149,12 @@ def _build_http_app() -> "Litestar":
             cookie_httponly=False,
         ),
         plugins=[HTMXPlugin()],
+        exception_handlers={
+            NotAuthorizedException: _handle_not_authorized,
+            NotFoundException: render_status_page,
+            HTTPException: render_status_page,
+            Exception: render_status_page,
+        },
         after_request=_add_security_headers,
         debug=True,
     )

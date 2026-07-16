@@ -1,6 +1,12 @@
-{% extends "layout/admin.html" %} {% block title %}{% if page %}Edit Page{% else
-%}New Page{% endif %}{% endblock %} {% block admin_content %}
-<h2>{% if page %}Edit Page{% else %}New Page{% endif %}</h2>
+{% extends "layout/admin.html" %}
+{% block title %}{% if page %}Edit page{% else %}New page{% endif %} · Garden CMS{% endblock %}
+{% block admin_content %}
+<div class="page-header">
+  <h2>{% if page %}Edit page{% else %}New page{% endif %}</h2>
+  <div class="page-header__actions">
+    <a class="outline secondary" href="/admin/pages">Cancel</a>
+  </div>
+</div>
 
 <form
   id="page-form"
@@ -9,28 +15,23 @@
 >
   <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}" />
   <label>
-      Title
-      <input
-        type="text"
-        name="title"
-        value="{{ page.title if page else '' }}"
-        required
-      />
-    </label>
-    <label>
-      Slug
-      <input
-        type="text"
-        name="slug"
-        value="{{ page.slug if page else '' }}"
-        required
-        pattern="[a-z0-9\-]+"
-        title="Lowercase letters, numbers, and hyphens only"
-      />
-    </label>
+    Title
+    <input type="text" name="title" value="{{ page.title if page else '' }}" required />
+  </label>
+  <label>
+    Slug
+    <input
+      type="text"
+      name="slug"
+      value="{{ page.slug if page else '' }}"
+      required
+      pattern="[a-z0-9\-]+"
+      title="Lowercase letters, numbers, and hyphens only"
+    />
+  </label>
 
   <label>
-    Meta Description
+    Meta description
     <input
       type="text"
       name="meta_description"
@@ -40,76 +41,57 @@
   </label>
 
   <label>
-    Body (Jinja template)
-    <textarea name="body" id="body-textarea" rows="20" hidden>{{ page.body if page else '' }}</textarea>
-    <div data-editor data-target="body-textarea" data-lang="django" data-preview="page-preview" class="language-django"></div>
+    Theme override
+    <select name="theme">
+      <option value="">Use active theme</option>
+      {% for t in themes %}
+      <option value="{{ t.id }}" {% if page and page.theme == t.id %}selected{% endif %}>{{ t.name }}</option>
+      {% endfor %}
+    </select>
   </label>
   <small>
-    Use <code>{{ "{{ site.key }}" }}</code> for content blocks,
+    Render this page with a specific theme instead of the site's
+    <a href="/admin/themes">active theme</a>. Leave on <strong>Use active
+    theme</strong> for normal pages — override only when a page needs its own
+    look (e.g. a landing page on a different theme).
+  </small>
+
+  <label>
+    Body (Jinja template)
+    <textarea name="body" id="body-textarea" rows="20" hidden>{{ page.body if page else '' }}</textarea>
+    <div
+      data-editor
+      data-target="body-textarea"
+      data-lang="django"
+      data-preview="page-preview"
+      data-preview-type="page"
+      class="language-django"
+    ></div>
+  </label>
+  <small>
+    Use <code>{{ '{{ site.key }}' }}</code> for content blocks,
     <code>&lt;CollectionFeed slug="blog" /&gt;</code> for collections,
-    <code>{{ "{{ media_url(\"file.jpg\") }}" }}</code> for images.
+    <code>{{ '{{ media_url("file.jpg") }}' }}</code> for images.
   </small>
   <iframe id="page-preview" class="preview" title="Page preview"></iframe>
-  <script>
-    document.addEventListener("DOMContentLoaded", function () {
-      var el = document.querySelector("[data-target='body-textarea']");
-      if (el) el._previewType = "page";
-    });
-  </script>
 
-  <fieldset>
-      <label>
-        <input
-          type="checkbox"
-          name="is_homepage"
-          {%
-          if
-          page
-          and
-          page.is_homepage
-          %}checked{%
-          endif
-          %}
-        />
-        Homepage
-      </label>
-      <label>
-        <input
-          type="checkbox"
-          name="show_in_nav"
-          {%
-          if
-          not
-          page
-          or
-          page.show_in_nav
-          %}checked{%
-          endif
-          %}
-        />
-        Show in nav
-      </label>
-    </fieldset>
-    <fieldset>
-      <label>
-        <input
-          type="checkbox"
-          name="published"
-          {%
-          if
-          page
-          and
-          page.published
-          %}checked{%
-          endif
-          %}
-        />
-        Published
-      </label>
-    </fieldset>
+  <div class="checkbox-grid">
+    <label>
+      <input type="checkbox" name="is_homepage" {% if page and page.is_homepage %}checked{% endif %} />
+      Homepage
+    </label>
+    <label>
+      <input type="checkbox" name="show_in_nav" {% if not page or page.show_in_nav %}checked{% endif %} />
+      Show in nav
+    </label>
+    <label>
+      <input type="checkbox" name="published" {% if page and page.published %}checked{% endif %} />
+      Published
+    </label>
+  </div>
 
   <button type="submit">
-    {% if page %}Save Changes{% else %}Create Page{% endif %}
+    {% if page %}Save changes{% else %}Create page{% endif %}
   </button>
 </form>
 {% endblock %}

@@ -1,6 +1,12 @@
-{% extends "layout/admin.html" %} {% block title %}{% if theme %}Edit Theme{%
-else %}New Theme{% endif %}{% endblock %} {% block admin_content %}
-<h2>{% if theme %}Edit Theme{% else %}New Theme{% endif %}</h2>
+{% extends "layout/admin.html" %}
+{% block title %}{% if theme %}Edit theme{% else %}New theme{% endif %} · Garden CMS{% endblock %}
+{% block admin_content %}
+<div class="page-header">
+  <h2>{% if theme %}Edit theme{% else %}New theme{% endif %}</h2>
+  <div class="page-header__actions">
+    <a class="outline secondary" href="/admin/themes">Cancel</a>
+  </div>
+</div>
 
 <form
   method="post"
@@ -9,12 +15,7 @@ else %}New Theme{% endif %}{% endblock %} {% block admin_content %}
   <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}" />
   <label>
     Name
-    <input
-      type="text"
-      name="name"
-      value="{{ theme.name if theme else '' }}"
-      required
-    />
+    <input type="text" name="name" value="{{ theme.name if theme else '' }}" required />
   </label>
   <label>
     Slug
@@ -28,28 +29,14 @@ else %}New Theme{% endif %}{% endblock %} {% block admin_content %}
     />
   </label>
 
-  <fieldset>
-    <label>
-      <input
-        type="checkbox"
-        name="active"
-        {%
-        if
-        theme
-        and
-        theme.active
-        %}checked{%
-        endif
-        %}
-      />
-      Active (only one theme can be active)
-    </label>
-  </fieldset>
+  <label>
+    <input type="checkbox" name="active" {% if theme and theme.active %}checked{% endif %} />
+    Active (only one theme can be active)
+  </label>
 
   <label>
-    Base Template (Jinja2 — extends layout/base.html)
-    <textarea name="base_template" id="base-template-textarea" rows="25" hidden>
-{% if theme %}{{ theme.base_template }}{% else %}{{ "{% extends \"layout/base.html\" %}" }}
+    Base template (Jinja2 — extends layout/base.html)
+    <textarea name="base_template" id="base-template-textarea" rows="25" hidden>{% if theme %}{{ theme.base_template }}{% else %}{{ "{% extends \"layout/base.html\" %}" }}
 {{ "{% block head %}" }}{{ "{{ extra_head }}" }}{{ "{% endblock %}" }}
 {{ "{% block body %}" }}
 <header>
@@ -63,52 +50,74 @@ else %}New Theme{% endif %}{% endblock %} {% block admin_content %}
 </header>
 <main>{{ "{{ content }}" }}</main>
 <footer>
-  <small>Powered by Bussin CMS</small>
+  <small>Built with Garden CMS</small>
 </footer>
-{{ "{% endblock %}" }}{% endif %}</textarea
-    >
+{{ "{% endblock %}" }}{% endif %}</textarea>
     <div
       data-editor
       data-target="base-template-textarea"
       data-lang="django"
       data-preview="theme-preview"
+      data-preview-type="theme"
     ></div>
   </label>
   <small>
-    Extends <code>layout/base.html</code> (provides &lt;head&gt;, Pico CSS,
-    htmx, FOUC script). Override blocks: <code>head</code> (extra
-    styles/scripts), <code>body</code> (page structure). Variables:
-    <code>{{ "{{ title }}" }}</code>, <code>{{ "{{ content }}" }}</code>,
-    <code>{{ "{{ nav_items }}" }}</code> (list of {title, slug, url}),
-    <code>{{ "{{ extra_head }}" }}</code> (theme CSS &lt;style&gt; tag).
+    Extends <code>layout/base.html</code>. Override blocks: <code>head</code> (extra styles/scripts), <code>body</code> (page structure).
+    Variables: <code>{{ '{{ title }}' }}</code>, <code>{{ '{{ content }}' }}</code>,
+    <code>{{ '{{ nav_items }}' }}</code> (list of {title, slug, url}),
+    <code>{{ '{{ extra_head }}' }}</code> (theme CSS <code>&lt;style&gt;</code> tag).
   </small>
 
   <label>
     CSS
-    <textarea name="css" id="css-textarea" rows="15" hidden>
-{{ theme.css if theme else '' }}</textarea
-    >
+    <textarea name="css" id="css-textarea" rows="15" hidden>{{ theme.css if theme else '' }}</textarea>
     <div
       data-editor
       data-target="css-textarea"
       data-lang="css"
       data-preview="theme-preview"
+      data-preview-type="css"
     ></div>
   </label>
+
+  <label>
+    CSS framework
+    <select name="css_framework">
+      <option value="none" {% if theme and theme.css_framework == "none" %}selected{% endif %}>None</option>
+      {% for key, name, head_html in css_frameworks %}
+      <option value="{{ key }}" {% if (theme and theme.css_framework == key) or (not theme and key == "pico") %}selected{% endif %}>{{ name }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <small>
+    The base classless framework linked ahead of this theme's own styles.
+    Themes built on a utility engine (UnoCSS, Tailwind) usually keep a
+    classless base here and load the engine from the Site head below.
+    Choose <strong>None</strong> for a fully hand-rolled theme. Admin always
+    uses Pico regardless of this choice.
+  </small>
+
+  <label>
+    Site head
+    <textarea name="site_head" id="site-head-textarea" rows="6" hidden>{{ theme.site_head if theme else '' }}</textarea>
+    <div
+      data-editor
+      data-target="site-head-textarea"
+      data-lang="markup"
+    ></div>
+  </label>
+  <small>
+    Theme-specific <code>&lt;head&gt;</code> HTML — the CSS engine
+    (UnoCSS, Tailwind…), web fonts, or theme <code>&lt;meta&gt;</code> tags.
+    Rendered before the theme's <code>&lt;style&gt;</code> and combined with
+    the site-wide <a href="/admin/settings">Site head</a> setting. Travels
+    with the theme.
+  </small>
+
   <iframe id="theme-preview" class="preview" title="Theme preview"></iframe>
-  <script>
-    document.addEventListener("DOMContentLoaded", function () {
-      var tmpl = document.querySelector(
-        "[data-target='base-template-textarea']",
-      );
-      if (tmpl) tmpl._previewType = "theme";
-      var css = document.querySelector("[data-target='css-textarea']");
-      if (css) css._previewType = "css";
-    });
-  </script>
 
   <button type="submit">
-    {% if theme %}Save Changes{% else %}Create Theme{% endif %}
+    {% if theme %}Save changes{% else %}Create theme{% endif %}
   </button>
 </form>
 {% endblock %}

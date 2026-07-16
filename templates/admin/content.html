@@ -1,11 +1,13 @@
-{% extends "layout/admin.html" %} {% block title %}Content Blocks{% endblock %}
+{% extends "layout/admin.html" %} {% block title %}Content Blocks · Garden CMS{% endblock %}
 {% block admin_content %}
-<h2>Content Blocks</h2>
+<div class="page-header">
+  <h2>Content blocks</h2>
+</div>
+
 <p>
-  Global values available in templates via <code>{{ "{{ site.key }}" }}</code>.
+  Global values available in templates via <code>{{ '{{ site.key }}' }}</code>.
 </p>
 
-<!-- New block form -->
 <details>
   <summary>Add new block</summary>
   <form method="post" action="/admin/content">
@@ -37,7 +39,7 @@
       Value
       <textarea name="value" rows="3"></textarea>
     </label>
-    <button type="submit">Create Block</button>
+    <button type="submit">Create block</button>
   </form>
 </details>
 
@@ -45,7 +47,7 @@
 <article id="block-{{ block.id }}">
   <header>
     <strong>{{ block.label }}</strong>
-    <small>{{ block.block_type }} &middot; <code>{{ block.key }}</code></small>
+    <small><StatusBadge status="active" label="{{ block.block_type }}" /> · <code>{{ block.key }}</code></small>
   </header>
   <form
     method="post"
@@ -57,57 +59,33 @@
   >
     <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}" />
     {% if block.block_type == "html" %}
-    <textarea id="value-{{ block.id }}" name="value" rows="5" hidden>
-{{ block.value }}</textarea
-    >
+    <textarea id="value-{{ block.id }}" name="value" rows="5" hidden>{{ block.value }}</textarea>
     <div
       data-editor
       data-target="value-{{ block.id }}"
       data-lang="django"
       data-preview="preview-{{ block.id }}"
-    >
-      {{ block.value }}
-    </div>
-    <small
-      >Jinja template syntax supported. Use
-      <code>{{ '{{ media_url("file.jpg") }}' }}</code> to insert media.</small
-    >
+      data-preview-type="page"
+    >{{ block.value }}</div>
+    <small>Jinja template syntax supported. Use <code>{{ '{{ media_url("file.jpg") }}' }}</code> to insert media.</small>
     {% if media_files %}
     <details>
       <summary>Insert media</summary>
-      <div
-        style="display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 0.5rem 0"
-      >
+      <div class="empty-state__actions" style="justify-content: flex-start; flex-wrap: wrap;">
         {% for mf in media_files %}
         <button
           type="button"
           class="outline secondary"
-          style="font-size: 0.8rem; padding: 0.25rem 0.5rem"
-          data-filename="{{ mf.filename }}"
-          data-block-id="{{ block.id }}"
-          onclick="(function(btn){
-            var editor = document.querySelector('[data-target=value-' + btn.dataset.blockId + ']');
-            if(editor && editor._jar){
-              var snippet = '<img src={{ '"{{' }} media_url(' + JSON.stringify(btn.dataset.filename) + ') {{ '}}"' }}>';
-              editor._jar.updateCode(editor.textContent + snippet);
-            }
-          })(this)"
+          data-insert-media="{{ mf.filename }}"
+          data-target-editor="[data-target='value-{{ block.id }}']"
         >
-          {{ mf.original_name }}
+          <Icon name="media" size="14" /> {{ mf.original_name }}
         </button>
         {% endfor %}
       </div>
     </details>
     {% endif %}
     <iframe id="preview-{{ block.id }}" class="preview"></iframe>
-    <script>
-      (() => {
-        const el = document.querySelector(
-          '[data-target="value-{{ block.id }}"]',
-        );
-        if (el) el._previewType = "page";
-      })();
-    </script>
     {% elif block.block_type == "image" %}
     <input
       type="text"
@@ -117,22 +95,25 @@
       placeholder="filename from media library"
     />
     {% if media_files %}
-    <select
-      onchange="if(this.value){document.getElementById('image-value-{{ block.id }}').value=this.value;this.selectedIndex=0}"
-    >
-      <option value="">Choose from media library…</option>
-      {% for mf in media_files %}
-      <option value="{{ mf.filename }}">{{ mf.original_name }}</option>
-      {% endfor %}
-    </select>
+    <label>
+      Choose from media library
+      <select data-mirror="image-value-{{ block.id }}">
+        <option value="">—</option>
+        {% for mf in media_files %}
+        <option value="{{ mf.filename }}">{{ mf.original_name }}</option>
+        {% endfor %}
+      </select>
+    </label>
     {% endif %}
     <small>Enter the filename of an uploaded media file.</small>
     {% else %}
     <input type="text" name="value" value="{{ block.value }}" />
     {% endif %}
-    <footer style="margin-top: 0.5rem;">
-      <button type="submit" id="save-btn-{{ block.id }}" style="margin-bottom: 0;">Save</button>
+    <footer class="form-footer">
+      <button type="submit" id="save-btn-{{ block.id }}">Save</button>
       <button
+        type="button"
+        class="secondary outline"
         hx-post="/admin/content/{{ block.id }}/delete"
         hx-target="#block-{{ block.id }}"
         hx-swap="outerHTML"
@@ -143,6 +124,12 @@
     </footer>
   </form>
 </article>
-{% endfor %} {% if not blocks %}
-<p>No content blocks yet. Use the form above to create one.</p>
-{% endif %} {% endblock %}
+{% endfor %}
+
+{% if not blocks %}
+<EmptyState
+  title="No content blocks yet"
+  body="Content blocks are global values for your templates — footer text, a hero headline, the site tagline. Use them anywhere with {{ '{{ site.key }}' }}."
+/>
+{% endif %}
+{% endblock %}

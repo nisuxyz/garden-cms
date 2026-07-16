@@ -85,13 +85,10 @@ CSS_FRAMEWORKS: list[tuple[str, str, str]] = [
      '<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/nicebyte/tty.css@latest/tty.css" />'),
     ("tufte", "Tufte CSS",
      '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tufte-css@1.8.0/tufte.min.css" />'),
-    # µCSS themes: Azure (default), Red, Pumpkin, Orange, Amber, Yellow, Lime,
-    # Green, Jade, Cyan, Blue, Indigo, Violet, Purple, Fuchsia, Pink, Sand,
-    # Grey, Zinc, Slate
-    ("µcss", "µCSS",
-     """
-      <!-- Azure (default), Red, Pumpkin, Orange, Amber, Yellow, Lime,  Green, Jade, Cyan, Blue, Indigo, Violet, Purple, Fuchsia, Pink, Sand,  Grey, Zinc, Slate -->
-      <link rel=\"stylesheet\" href=\"https://unpkg.com/@digicreon/mucss/dist/mu.fuchsia.css\" />"""),
+    # µCSS has multiple color variants but only ships one from this CDN path.
+    # We list just the fuchsia variant and disclose the limitation in the name.
+    ("µcss", "µCSS (Fuchsia)",
+     '<link rel="stylesheet" href="https://unpkg.com/@digicreon/mucss/dist/mu.fuchsia.css" />'),
     ("w3c", "W3C Core Styles",
      '<link rel="stylesheet" href="https://www.w3.org/StyleSheets/Core/Chocolate" type="text/css" />'),
     ("water", "water.css",

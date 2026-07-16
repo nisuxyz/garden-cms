@@ -1,0 +1,11 @@
+{#def status, label="" #}
+{#- Status pill. Usage:
+<StatusBadge status="published" />
+<StatusBadge status="draft" />
+<StatusBadge status="active" />
+<StatusBadge status="inactive" />
+<StatusBadge status="home" label="Homepage" />
+-#}
+{% set status = status | lower %}
+{% set label = label or status %}
+<span class="status-badge status-badge--{{ status }}">{{ label }}</span>

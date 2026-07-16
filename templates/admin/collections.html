@@ -1,20 +1,22 @@
-{% extends "layout/admin.html" %} {% block title %}Collections{% endblock %} {%
-block admin_content %}
-<hgroup>
+{% extends "layout/admin.html" %} {% block title %}Collections · Garden CMS{% endblock %}
+{% block admin_content %}
+<div class="page-header">
   <h2>Collections</h2>
-  <p><a href="/admin/collections/new">New collection</a></p>
-</hgroup>
+  <div class="page-header__actions">
+    <a role="button" href="/admin/collections/new">New collection</a>
+  </div>
+</div>
 
 {% if collections %}
 <div class="table-scroll">
 <table>
+  <caption class="visually-hidden">All collections</caption>
   <thead>
     <tr>
-      <th>Name</th>
-      <th>Slug</th>
-      <th>Items</th>
-      <th></th>
-      <th></th>
+      <th scope="col">Name</th>
+      <th scope="col">Slug</th>
+      <th scope="col">Items</th>
+      <th scope="col"><span class="visually-hidden">Actions</span></th>
     </tr>
   </thead>
   <tbody>
@@ -23,20 +25,25 @@ block admin_content %}
       <td><a href="/admin/collections/{{ col.id }}/edit">{{ col.name }}</a></td>
       <td><code>{{ col.slug }}</code></td>
       <td>
-        <a href="/admin/collections/{{ col.id }}/items">{{ col.item_count }}</a>
+        <a href="/admin/collections/{{ col.id }}/items">{{ col.item_count }} items</a>
       </td>
       <td>
-        <a href="/admin/collections/{{ col.id }}/items">Items</a>
-      </td>
-      <td>
-        <button
-          hx-post="/admin/collections/{{ col.id }}/delete"
-          hx-target="#col-row-{{ col.id }}"
-          hx-swap="outerHTML"
-          hx-confirm='Delete collection "{{ col.name }}" and all its items?'
-        >
-          Delete
-        </button>
+        <div class="icon-stack">
+          <a class="icon-btn" href="/admin/collections/{{ col.id }}/edit" aria-label="Edit collection">
+            <Icon name="edit" />
+          </a>
+          <button
+            type="button"
+            class="icon-btn icon-btn--danger"
+            hx-post="/admin/collections/{{ col.id }}/delete"
+            hx-target="#col-row-{{ col.id }}"
+            hx-swap="outerHTML"
+            hx-confirm='Delete collection "{{ col.name }}" and all its items?'
+            aria-label="Delete collection"
+          >
+            <Icon name="trash" />
+          </button>
+        </div>
       </td>
     </tr>
     {% endfor %}
@@ -44,7 +51,10 @@ block admin_content %}
 </table>
 </div>
 {% else %}
-<p>
-  No collections yet. <a href="/admin/collections/new">Create one &rarr;</a>
-</p>
+<EmptyState
+  title="No collections yet"
+  body="Collections are structured content types — blogs, projects, recipes, anything listable. Define fields once, then fill them per item."
+  cta_url="/admin/collections/new"
+  cta_label="Create your first collection"
+/>
 {% endif %} {% endblock %}

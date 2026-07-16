@@ -1,9 +1,9 @@
-{% extends "layout/admin.html" %} {% block title %}Markdown Mounts{% endblock %}
+{% extends "layout/admin.html" %} {% block title %}Markdown mounts · Garden CMS{% endblock %}
 {% block admin_content %}
-<hgroup>
-  <h2>Markdown Mounts</h2>
-  <p>Map directories under <code>data/md/</code> to public URL routes.</p>
-</hgroup>
+<div class="page-header">
+  <h2>Markdown mounts</h2>
+</div>
+<p>Map directories under <code>data/md/</code> to public URL routes.</p>
 
 {% if saved %}
 <p><ins>Mounts saved.</ins></p>
@@ -12,11 +12,12 @@
   <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}" />
   <div class="table-scroll">
   <table>
+    <caption class="visually-hidden">Markdown directories and their public mount points</caption>
     <thead>
       <tr>
-        <th>Directory</th>
-        <th>Route slug</th>
-        <th>Files</th>
+        <th scope="col">Directory</th>
+        <th scope="col">Route slug</th>
+        <th scope="col">Files</th>
       </tr>
     </thead>
     <tbody>

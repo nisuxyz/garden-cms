@@ -8,7 +8,7 @@ from litestar import Litestar, Request, Response
 from litestar.config.csrf import CSRFConfig
 from litestar.contrib.jinja import JinjaTemplateEngine
 from litestar.di import Provide
-from litestar.exceptions import NotAuthorizedException
+from litestar.exceptions import HTTPException, NotAuthorizedException, NotFoundException
 from litestar.middleware.session.client_side import CookieBackendConfig
 from litestar.plugins.htmx import HTMXPlugin
 from litestar.response import Redirect
@@ -17,6 +17,7 @@ from litestar.template.config import TemplateConfig
 
 from db.connection import db_lifespan
 from cms.catalog import init_catalog, provide_catalog
+from cms.errors import render_status_page
 from routes.admin import admin_router
 from routes.api import api_router
 from routes.media import media_router
@@ -109,7 +110,13 @@ app = Litestar(
     middleware=[session_config.middleware],
     csrf_config=csrf_config,
     plugins=[HTMXPlugin()],
-    exception_handlers={NotAuthorizedException: _handle_not_authorized},
+    exception_handlers={
+        # Most-specific class wins, so the login redirect stays for 401s.
+        NotAuthorizedException: _handle_not_authorized,
+        NotFoundException: render_status_page,   # 404
+        HTTPException: render_status_page,        # other 4xx/5xx
+        Exception: render_status_page,            # uncaught → 500
+    },
     after_request=add_security_headers,
     debug=os.getenv("DEBUG", "false").lower() == "true",
 )

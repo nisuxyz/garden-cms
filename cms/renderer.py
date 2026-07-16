@@ -96,20 +96,40 @@ async def render_themed(
     content_html: str,
     nav_items: list[dict[str, str]],
     site_head: str | None = None,
+    theme_site_head: str | None = None,
+    css_framework_html: str | None = None,
     logo: str | None = None,
 ) -> str:
     """Wrap *content_html* in a theme's base template.
 
     The theme template typically ``{% extends "layout/base.html" %}``.
+
+    The page ``<head>`` is composed from two layers:
+
+    * ``extra_admin_head`` — *theme-independent*: the site's CSS
+      framework ``<link>`` followed by the site-level Site Head
+      HTML (analytics, meta tags, fonts). Rendered by
+      ``layout/base.html``'s ``{% block admin_head %}``, which
+      every theme inherits.
+    * ``extra_head`` — *theme-specific*: the active theme's own
+      Site Head HTML followed by its CSS wrapped in ``<style>``.
+      Rendered inside the theme's own ``{% block head %}`` via
+      ``{{ extra_head }}``.
+
+    ``extra_admin_head`` is always set (even to an empty string) so
+    a framework choice of "none" is respected instead of falling
+    back to the base template's built-in Pico default.
     """
-    extra_head = Markup(f"<style>{css}</style>") if css else ""
+    admin_parts = [p for p in (css_framework_html, site_head) if p]
+    theme_parts = [
+        p for p in (theme_site_head, (f"<style>{css}</style>" if css else "")) if p
+    ]
     ctx: dict[str, Any] = {
         "title": title,
         "content": Markup(content_html),
         "nav_items": nav_items,
-        "extra_head": extra_head,
+        "extra_head": Markup("\n".join(theme_parts)),
+        "extra_admin_head": Markup("\n".join(admin_parts)),
         "logo": logo,
     }
-    if site_head:
-        ctx["extra_admin_head"] = Markup(site_head)
     return await render(base_template, ctx)

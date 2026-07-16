@@ -1,10 +1,15 @@
-{% extends "layout/admin.html" %} {% block title %}{% if item %}Edit Item{% else
-%}New Item{% endif %} — {{ collection.name }}{% endblock %} {% block
-admin_content %}
-<h2>
-  {% if item %}Edit Item{% else %}New Item{% endif %}
-  <small>in {{ collection.name }}</small>
-</h2>
+{% extends "layout/admin.html" %}
+{% block title %}{% if item %}Edit item{% else %}New item{% endif %} — {{ collection.name }} · Garden CMS{% endblock %}
+{% block admin_content %}
+<div class="page-header">
+  <h2>
+    {% if item %}Edit item{% else %}New item{% endif %}
+    <small>in {{ collection.name }}</small>
+  </h2>
+  <div class="page-header__actions">
+    <a class="outline secondary" href="/admin/collections/{{ collection.id }}/items">Cancel</a>
+  </div>
+</div>
 
 <form
   method="post"
@@ -35,21 +40,15 @@ admin_content %}
   <!-- Dynamic fields from collection schema -->
   {% for field in collection.fields_schema %}
   <label>
-    {{ field.name | replace("_", " ") | title }} {% if field.type == "html" %}
+    {{ field.name | replace("_", " ") | title }}
+    {% if field.type == "html" %}
     <textarea
       name="field_{{ field.name }}"
       id="field-{{ field.name }}-textarea"
       rows="10"
       hidden
-      {%
-      if
-      field.required
-      %}required{%
-      endif
-      %}
-    >
-{{ item.data[field.name] if item and item.data and field.name in item.data else '' }}</textarea
-    >
+      {% if field.required %}required{% endif %}
+    >{{ item.data[field.name] if item and item.data and field.name in item.data else '' }}</textarea>
     <div
       data-editor
       data-target="field-{{ field.name }}-textarea"
@@ -60,18 +59,7 @@ admin_content %}
     <input
       type="checkbox"
       name="field_{{ field.name }}"
-      {%
-      if
-      item
-      and
-      item.data
-      and
-      item.data.get(field.name)
-      in
-      ["on", "true", true]
-      %}checked{%
-      endif
-      %}
+      {% if item and item.data and item.data.get(field.name) in ["on", "true", true] %}checked{% endif %}
     />
     {% elif field.type == "list" %}
     <input
@@ -79,12 +67,7 @@ admin_content %}
       name="field_{{ field.name }}"
       value="{{ item.data[field.name] if item and item.data and field.name in item.data else '' }}"
       placeholder="Comma-separated values"
-      {%
-      if
-      field.required
-      %}required{%
-      endif
-      %}
+      {% if field.required %}required{% endif %}
     />
     <small>Separate items with commas.</small>
     {% elif field.type == "url" %}
@@ -92,24 +75,14 @@ admin_content %}
       type="url"
       name="field_{{ field.name }}"
       value="{{ item.data[field.name] if item and item.data and field.name in item.data else '' }}"
-      {%
-      if
-      field.required
-      %}required{%
-      endif
-      %}
+      {% if field.required %}required{% endif %}
     />
     {% elif field.type == "date" %}
     <input
       type="date"
       name="field_{{ field.name }}"
       value="{{ item.data[field.name] if item and item.data and field.name in item.data else '' }}"
-      {%
-      if
-      field.required
-      %}required{%
-      endif
-      %}
+      {% if field.required %}required{% endif %}
     />
     {% elif field.type == "image" %}
     <input
@@ -117,12 +90,7 @@ admin_content %}
       name="field_{{ field.name }}"
       value="{{ item.data[field.name] if item and item.data and field.name in item.data else '' }}"
       placeholder="Filename from media library"
-      {%
-      if
-      field.required
-      %}required{%
-      endif
-      %}
+      {% if field.required %}required{% endif %}
     />
     <small>Enter the filename of an uploaded media file.</small>
     {% else %}
@@ -130,12 +98,7 @@ admin_content %}
       type="text"
       name="field_{{ field.name }}"
       value="{{ item.data[field.name] if item and item.data and field.name in item.data else '' }}"
-      {%
-      if
-      field.required
-      %}required{%
-      endif
-      %}
+      {% if field.required %}required{% endif %}
     />
     {% endif %}
   </label>
@@ -149,43 +112,19 @@ admin_content %}
       value="{{ item.sort_order if item else 0 }}"
     />
   </label>
-  <fieldset>
+  <div class="checkbox-grid">
     <label>
-      <input
-        type="checkbox"
-        name="featured"
-        {%
-        if
-        item
-        and
-        item.featured
-        %}checked{%
-        endif
-        %}
-      />
+      <input type="checkbox" name="featured" {% if item and item.featured %}checked{% endif %} />
       Featured
     </label>
-  </fieldset>
-  <fieldset>
     <label>
-      <input
-        type="checkbox"
-        name="published"
-        {%
-        if
-        item
-        and
-        item.published
-        %}checked{%
-        endif
-        %}
-      />
+      <input type="checkbox" name="published" {% if item and item.published %}checked{% endif %} />
       Published
     </label>
-  </fieldset>
+  </div>
 
   <button type="submit">
-    {% if item %}Save Changes{% else %}Create Item{% endif %}
+    {% if item %}Save changes{% else %}Create item{% endif %}
   </button>
 </form>
 {% endblock %}

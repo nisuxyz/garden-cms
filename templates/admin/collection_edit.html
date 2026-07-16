@@ -1,7 +1,12 @@
-{% extends "layout/admin.html" %} {% block title %}{% if collection %}Edit
-Collection{% else %}New Collection{% endif %}{% endblock %} {% block
-admin_content %}
-<h2>{% if collection %}Edit Collection{% else %}New Collection{% endif %}</h2>
+{% extends "layout/admin.html" %}
+{% block title %}{% if collection %}Edit collection{% else %}New collection{% endif %} · Garden CMS{% endblock %}
+{% block admin_content %}
+<div class="page-header">
+  <h2>{% if collection %}Edit collection{% else %}New collection{% endif %}</h2>
+  <div class="page-header__actions">
+    <a class="outline secondary" href="/admin/collections">Cancel</a>
+  </div>
+</div>
 
 <form
   method="post"
@@ -80,6 +85,7 @@ admin_content %}
       data-target="card-template-textarea"
       data-lang="django"
       data-preview="card-preview"
+      data-preview-type="card"
     ></div>
   </label>
   <small>
@@ -104,6 +110,7 @@ admin_content %}
       data-target="detail-template-textarea"
       data-lang="django"
       data-preview="detail-preview"
+      data-preview-type="detail"
     ></div>
   </label>
   <small>
@@ -127,30 +134,15 @@ admin_content %}
       data-target="empty-template-textarea"
       data-lang="django"
       data-preview="empty-preview"
+      data-preview-type="page"
     ></div>
   </label>
-  <small> Shown when the collection has no published items. Plain HTML. </small>
+  <small>Shown when the collection has no published items. Plain HTML.</small>
   <iframe
     id="empty-preview"
     class="preview"
     title="Empty template preview"
   ></iframe>
-  <script>
-    document.addEventListener("DOMContentLoaded", function () {
-      var card = document.querySelector(
-        "[data-target='card-template-textarea']",
-      );
-      if (card) card._previewType = "card";
-      var detail = document.querySelector(
-        "[data-target='detail-template-textarea']",
-      );
-      if (detail) detail._previewType = "detail";
-      var empty = document.querySelector(
-        "[data-target='empty-template-textarea']",
-      );
-      if (empty) empty._previewType = "page";
-    });
-  </script>
 
   <button type="submit">
     {% if collection %}Save Changes{% else %}Create Collection{% endif %}

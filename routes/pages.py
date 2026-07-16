@@ -83,7 +83,9 @@ async def dynamic_page(slug: str) -> Response | Redirect:
             result = resolve_md_file(dir_name, sub_path)
             if result is not None:
                 title, content_html, layout_source = result
-                html = await render_md_page(content_html, title, layout_source)
+                html = await render_md_page(
+                    content_html, title, layout_source, current_path=f"/{slug}",
+                )
                 return Response(content=html, media_type="text/html")
 
     raise NotFoundException(detail="Page not found")

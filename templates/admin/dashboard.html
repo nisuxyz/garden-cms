@@ -1,19 +1,67 @@
-{% extends "layout/admin.html" %} {% block title %}Admin{% endblock %} {% block
-admin_content %}
-<h2>Dashboard</h2>
-<article>
-    <header><strong>Pages</strong></header>
-    <p><data value="{{ page_count }}">{{ page_count }}</data></p>
-    <footer><a href="/admin/pages">Manage &rarr;</a></footer>
+{% extends "layout/admin.html" %} {% block title %}Dashboard · Garden CMS{% endblock %}
+{% block admin_content %}
+<div class="page-header">
+  <h2>Dashboard</h2>
+  <div class="page-header__actions">
+    <a role="button" class="outline" href="/docs">View docs</a>
+  </div>
+</div>
+
+<p>
+  Everything you publish on the public site lives here. Pick a section to get
+  started.
+</p>
+
+<div class="dashboard-grid">
+  <article class="dashboard-card">
+    <div class="dashboard-card__head">
+      <Icon name="page" />
+      <span>Pages</span>
+    </div>
+    <div class="dashboard-card__count">{{ page_count }}</div>
+    <p class="dashboard-card__body">Jinja2 templates. The first one becomes the homepage.</p>
+    <div class="dashboard-card__actions">
+      <a role="button" href="/admin/pages/new">New page</a>
+      <a href="/admin/pages">View all →</a>
+    </div>
   </article>
-  <article>
-    <header><strong>Content Blocks</strong></header>
-    <p><data value="{{ block_count }}">{{ block_count }}</data></p>
-    <footer><a href="/admin/content">Manage &rarr;</a></footer>
+
+  <article class="dashboard-card">
+    <div class="dashboard-card__head">
+      <Icon name="block" />
+      <span>Content blocks</span>
+    </div>
+    <div class="dashboard-card__count">{{ block_count }}</div>
+    <p class="dashboard-card__body">Global key/value pairs available in every template as <code>{{ '{{ site.key }}' }}</code>.</p>
+    <div class="dashboard-card__actions">
+      <a role="button" href="/admin/content">Manage</a>
+    </div>
   </article>
-  <article>
-    <header><strong>Collections</strong></header>
-    <p><data value="{{ collection_count }}">{{ collection_count }}</data></p>
-    <footer><a href="/admin/collections">Manage &rarr;</a></footer>
-</article>
+
+  <article class="dashboard-card">
+    <div class="dashboard-card__head">
+      <Icon name="collection" />
+      <span>Collections</span>
+    </div>
+    <div class="dashboard-card__count">{{ collection_count }}</div>
+    <p class="dashboard-card__body">Structured content types — blogs, projects, anything listable.</p>
+    <div class="dashboard-card__actions">
+      <a role="button" href="/admin/collections/new">New collection</a>
+      <a href="/admin/collections">View all →</a>
+    </div>
+  </article>
+
+  <article class="dashboard-card">
+    <div class="dashboard-card__head">
+      <Icon name="media" />
+      <span>Media</span>
+    </div>
+    <div class="dashboard-card__count">{{ media_count }}</div>
+    <p class="dashboard-card__body">Images and files served from local disk or S3.</p>
+    <div class="dashboard-card__actions">
+      <a role="button" href="/admin/media">Manage</a>
+    </div>
+  </article>
+</div>
+
 {% endblock %}

@@ -1,20 +1,22 @@
-{% extends "layout/admin.html" %} {% block title %}Themes{% endblock %} {% block
-admin_content %}
-<hgroup>
+{% extends "layout/admin.html" %} {% block title %}Themes · Garden CMS{% endblock %}
+{% block admin_content %}
+<div class="page-header">
   <h2>Themes</h2>
-  <p><a href="/admin/themes/new">New theme</a></p>
-</hgroup>
+  <div class="page-header__actions">
+    <a role="button" href="/admin/themes/new">New theme</a>
+  </div>
+</div>
 
 {% if themes %}
 <div class="table-scroll">
 <table>
+  <caption class="visually-hidden">All themes</caption>
   <thead>
     <tr>
-      <th>Name</th>
-      <th>Slug</th>
-      <th>Status</th>
-      <th></th>
-      <th></th>
+      <th scope="col">Name</th>
+      <th scope="col">Slug</th>
+      <th scope="col">Status</th>
+      <th scope="col"><span class="visually-hidden">Actions</span></th>
     </tr>
   </thead>
   <tbody>
@@ -23,25 +25,31 @@ admin_content %}
       <td><a href="/admin/themes/{{ theme.id }}/edit">{{ theme.name }}</a></td>
       <td><code>{{ theme.slug }}</code></td>
       <td>
-        {% if theme.active %}<ins>active</ins>
+        {% if theme.active %}
+          <StatusBadge status="active" />
         {% else %}
-        <button hx-post="/admin/themes/{{ theme.id }}/activate">Activate</button>
+          <button type="button" hx-post="/admin/themes/{{ theme.id }}/activate">Activate</button>
         {% endif %}
       </td>
       <td>
-        <a href="/admin/themes/{{ theme.id }}/edit">Edit</a>
-      </td>
-      <td>
-        {% if not theme.active %}
-        <button
-          hx-post="/admin/themes/{{ theme.id }}/delete"
-          hx-target="#theme-row-{{ theme.id }}"
-          hx-swap="outerHTML"
-          hx-confirm='Delete theme "{{ theme.name }}"?'
-        >
-          Delete
-        </button>
-        {% endif %}
+        <div class="icon-stack">
+          <a class="icon-btn" href="/admin/themes/{{ theme.id }}/edit" aria-label="Edit theme">
+            <Icon name="edit" />
+          </a>
+          {% if not theme.active %}
+          <button
+            type="button"
+            class="icon-btn icon-btn--danger"
+            hx-post="/admin/themes/{{ theme.id }}/delete"
+            hx-target="#theme-row-{{ theme.id }}"
+            hx-swap="outerHTML"
+            hx-confirm='Delete theme "{{ theme.name }}"?'
+            aria-label="Delete theme"
+          >
+            <Icon name="trash" />
+          </button>
+          {% endif %}
+        </div>
       </td>
     </tr>
     {% endfor %}
@@ -49,5 +57,10 @@ admin_content %}
 </table>
 </div>
 {% else %}
-<p>No themes yet. <a href="/admin/themes/new">Create one &rarr;</a></p>
+<EmptyState
+  title="No themes yet"
+  body="A theme is a Jinja2 base template plus CSS. Pick a classless framework preset, edit the starter, save."
+  cta_url="/admin/themes/new"
+  cta_label="Create your first theme"
+/>
 {% endif %} {% endblock %}

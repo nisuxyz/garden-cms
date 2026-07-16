@@ -1,209 +1,159 @@
-{% extends "layout/admin.html" %} {% block title %}Settings{% endblock %} {%
-block admin_content %}
-<h2>Settings</h2>
+{% extends "layout/admin.html" %} {% block title %}Settings · Garden CMS{% endblock %}
+{% block admin_content %}
+<div class="page-header">
+  <h2>Settings</h2>
+</div>
 
 {% if saved %}
-<p><ins>Settings saved.</ins></p>
+<p><StatusBadge status="active" label="saved" /></p>
 {% endif %} {% if error %}
 <p><mark>{{ error }}</mark></p>
 {% endif %}
 
 <form method="post" action="/admin/settings">
   <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}" />
-  <h3>Media Storage</h3>
 
-  <label>
-    Storage Backend
-    <select
-      name="storage_backend"
-      id="storage-backend"
-      onchange="
-        document.getElementById('s3-fields').hidden = this.value !== 's3'
-      "
-    >
-      <option
-        value="local"
-        {% if settings.storage_backend != "s3" %}selected{% endif %}
-      >
-        Local Disk
-      </option>
-      <option
-        value="s3"
-        {% if settings.storage_backend == "s3" %}selected{% endif %}
-      >
-        S3-Compatible
-      </option>
-    </select>
-  </label>
-
-  <div id="s3-fields" {% if settings.storage_backend !="s3" %}hidden{% endif %}>
-    <label>
-      Bucket
-      <input
-        type="text"
-        name="s3_bucket"
-        value="{{ settings.s3_bucket }}"
-        placeholder="my-media-bucket"
-      />
-    </label>
-    <label>
-      Region
-      <input
-        type="text"
-        name="s3_region"
-        value="{{ settings.s3_region }}"
-        placeholder="us-east-1"
-      />
-    </label>
+  <section class="settings-section">
+    <h3>Media storage</h3>
 
     <label>
-      Endpoint URL
-      <input
-        type="url"
-        name="s3_endpoint_url"
-        value="{{ settings.s3_endpoint_url }}"
-        placeholder="https://s3.amazonaws.com (leave blank for AWS default)"
-      />
-      <small
-        >Custom endpoint for MinIO, Cloudflare R2, or other S3-compatible
-        providers.</small
-      >
+      Storage backend
+      <select name="storage_backend" id="storage-backend">
+        <option value="local" {% if settings.storage_backend != "s3" %}selected{% endif %}>Local disk</option>
+        <option value="s3" {% if settings.storage_backend == "s3" %}selected{% endif %}>S3-compatible</option>
+      </select>
     </label>
 
+    <div id="s3-fields" {% if settings.storage_backend != "s3" %}hidden{% endif %}>
+      <label>
+        Bucket
+        <input type="text" name="s3_bucket" value="{{ settings.s3_bucket }}" placeholder="my-media-bucket" />
+      </label>
+      <label>
+        Region
+        <input type="text" name="s3_region" value="{{ settings.s3_region }}" placeholder="us-east-1" />
+      </label>
+      <label>
+        Endpoint URL
+        <input type="url" name="s3_endpoint_url" value="{{ settings.s3_endpoint_url }}" placeholder="https://s3.amazonaws.com (leave blank for AWS default)" />
+        <small>Custom endpoint for MinIO, Cloudflare R2, or other S3-compatible providers.</small>
+      </label>
+      <label>
+        Access key ID
+        <input type="text" name="s3_access_key_id" value="{{ settings.s3_access_key_id }}" autocomplete="off" />
+      </label>
+      <label>
+        Secret access key
+        <input
+          type="password"
+          name="s3_secret_access_key"
+          placeholder="{{ '••••••••' if settings.s3_secret_access_key else 'Paste a new secret to set or replace' }}"
+          autocomplete="off"
+        />
+        <small>
+          {% if settings.s3_secret_access_key %}
+          A secret is currently stored. Leave the field blank to keep it.
+          {% else %}
+          Empty by default. Paste a new secret to set it.
+          {% endif %}
+        </small>
+      </label>
+      <label>
+        Key prefix
+        <input type="text" name="s3_prefix" value="{{ settings.s3_prefix }}" placeholder="uploads" />
+        <small>Optional path prefix for all uploaded files.</small>
+      </label>
+      <label>
+        Public URL base
+        <input type="url" name="s3_public_url" value="{{ settings.s3_public_url }}" placeholder="https://cdn.example.com" />
+        <small>If set, media URLs serve directly from this origin instead of proxying through the app.</small>
+      </label>
+    </div>
+  </section>
+
+  <section class="settings-section">
+    <h3>Site</h3>
+
     <label>
-      Access Key ID
-      <input
-        type="text"
-        name="s3_access_key_id"
-        value="{{ settings.s3_access_key_id }}"
-        autocomplete="off"
-      />
-    </label>
-    <label>
-      Secret Access Key
-      <input
-        type="password"
-        name="s3_secret_access_key"
-        placeholder="{{ '(%d characters currently stored — leave blank to keep)'|format(settings.s3_secret_access_key|length) if settings.s3_secret_access_key else 'Leave blank to keep existing' }}"
-        autocomplete="off"
-      />
-      {% if settings.s3_secret_access_key %}
-      <small>A secret is currently stored. Leave the field blank when saving to keep it unchanged.</small>
-      {% endif %}
+      Favicon
+      <select name="favicon">
+        <option value="">Default (built-in)</option>
+        {% for file in media_files %}
+        <option value="{{ file.filename }}" {% if settings.favicon == file.filename %}selected{% endif %}>
+          {{ file.original_name }} ({{ file.filename }})
+        </option>
+        {% endfor %}
+      </select>
+      <small>Select an uploaded image. Recommended: SVG, PNG, or ICO.</small>
     </label>
 
     <label>
-      Key Prefix
-      <input
-        type="text"
-        name="s3_prefix"
-        value="{{ settings.s3_prefix }}"
-        placeholder="uploads"
-      />
-      <small>Optional path prefix for all uploaded files.</small>
+      Logo
+      <select name="logo">
+        <option value="">None</option>
+        {% for file in media_files %}
+        <option value="{{ file.filename }}" {% if settings.logo == file.filename %}selected{% endif %}>
+          {{ file.original_name }} ({{ file.filename }})
+        </option>
+        {% endfor %}
+      </select>
+      <small>Available in theme templates as <code>{{ '{{ logo }}' }}</code>.</small>
     </label>
+
     <label>
-      Public URL Base
-      <input
-        type="url"
-        name="s3_public_url"
-        value="{{ settings.s3_public_url }}"
-        placeholder="https://cdn.example.com"
-      />
-      <small
-        >If set, media URLs serve directly from this origin instead of proxying
-        through the app.</small
-      >
+      Site head
+      <textarea name="site_head" rows="6" placeholder="<meta name=&quot;theme-color&quot; content=&quot;#2d6a4f&quot;>
+<script defer src=&quot;https://analytics.example.com/script.js&quot;></script>">{{ settings.site_head }}</textarea>
+      <small>
+        Theme-<em>independent</em> HTML injected into <code>&lt;head&gt;</code>
+        on every public page — analytics, verification meta tags, global fonts.
+        The base CSS framework and theme-specific head HTML live on the
+        <a href="/admin/themes">theme</a>, not here.
+      </small>
     </label>
-  </div>
+  </section>
 
-  <h3>Site</h3>
+  <section class="settings-section">
+    <h3>Error pages</h3>
 
-  <label>
-    Favicon
-    <select name="favicon">
-      <option value="">Default (built-in)</option>
-      {% for file in media_files %}
-      <option
-        value="{{ file.filename }}"
-        {% if settings.favicon == file.filename %}selected{% endif %}
-      >
-        {{ file.original_name }} ({{ file.filename }})
-      </option>
-      {% endfor %}
-    </select>
-    <small
-      >Select an uploaded image to use as the site favicon. Recommended: SVG,
-      PNG, or ICO.</small
-    >
-  </label>
+    <label>
+      Status page
+      <select name="status_page">
+        <option value="">Built-in default</option>
+        {% for page in pages %}
+        <option value="{{ page.slug }}" {% if settings.status_page == page.slug %}selected{% endif %}>
+          {{ page.title }} (/{{ page.slug }})
+        </option>
+        {% endfor %}
+      </select>
+      <small>
+        Page rendered for error responses (404, 500, 403…). Its body
+        receives <code>{{ '{{ status_code }}' }}</code>,
+        <code>{{ '{{ status_text }}' }}</code>, and
+        <code>{{ '{{ error }}' }}</code> — branch on the code to show the
+        right message. Leave as “Built-in default” for a plain fallback.
+      </small>
+    </label>
+  </section>
 
-  <label>
-    Logo
-    <select name="logo">
-      <option value="">None</option>
-      {% for file in media_files %}
-      <option
-        value="{{ file.filename }}"
-        {% if settings.logo == file.filename %}selected{% endif %}
-      >
-        {{ file.original_name }} ({{ file.filename }})
-      </option>
-      {% endfor %}
-    </select>
-    <small
-      >Select an uploaded image to use as the site logo. Available in theme
-      templates as <code>{{ '{{ logo }}' }}</code>.</small
-    >
-  </label>
+  <section class="settings-section">
+    <h3>Performance</h3>
 
-  <label>
-    Site Head
-    <select
-      id="css-preset"
-      onchange="
-        if (this.value) {
-          document.querySelector('[name=site_head]').value = this.value;
-          this.selectedIndex = 0;
-        }
-      "
-    >
-      <option value="">Insert a classless CSS framework…</option>
-      {% for key, name, head_html in css_frameworks %}
-      <option value="{{ head_html }}">{{ name }}</option>
-      {% endfor %}
-    </select>
-    <textarea name="site_head" rows="6">{{ settings.site_head }}</textarea>
-    <small
-      >HTML injected into <code>&lt;head&gt;</code> on the public site (e.g.
-      stylesheet links, meta tags). Admin always uses Pico.</small
-    >
-  </label>
-
-  <h3>Performance</h3>
-
-  <p>
-    <strong>Stateless mode:</strong>
     {% if stateless %}
-    <ins>active</ins>
-    <br />
-    <small
-      >The <code>STATELESS</code> environment variable is set. Content blocks
-      and storage settings are reloaded from the database on every request. This
-      is appropriate for serverless and multi-instance deployments.</small
-    >
+    <div class="settings-banner settings-banner--info">
+      <strong>Stateless mode is on.</strong>
+      Content blocks and storage settings reload from the database on every request.
+      Appropriate for serverless and multi-instance deployments.
+    </div>
     {% else %}
-    <del>inactive</del>
-    <br />
-    <small
-      >Content blocks and storage settings are cached in memory and refreshed on
-      save. Set the <code>STATELESS</code> environment variable to
-      <code>true</code> to reload from the database on every request
-      (recommended for serverless deployments).</small
-    >
+    <div class="settings-banner settings-banner--info">
+      <strong>Stateless mode is off.</strong>
+      Content blocks and storage settings are cached in memory and refreshed on save.
+      Set <code>STATELESS=true</code> to reload per request — recommended for serverless.
+    </div>
     {% endif %}
-  </p>
+  </section>
 
-  <button type="submit">Save Settings</button>
+  <button type="submit">Save settings</button>
 </form>
 {% endblock %}

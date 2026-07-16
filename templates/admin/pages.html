@@ -1,21 +1,24 @@
-{% extends "layout/admin.html" %} {% block title %}Pages{% endblock %} {% block
-admin_content %}
-<hgroup>
+{% extends "layout/admin.html" %} {% block title %}Pages · Garden CMS{% endblock %}
+{% block admin_content %}
+<div class="page-header">
   <h2>Pages</h2>
-  <p><a href="/admin/pages/new">New page</a></p>
-</hgroup>
+  <div class="page-header__actions">
+    <a role="button" href="/admin/pages/new">New page</a>
+  </div>
+</div>
 
 {% if pages %}
 <div class="table-scroll">
 <table>
+  <caption class="visually-hidden">All pages ordered by navigation position</caption>
   <thead>
     <tr>
-      <th></th>
-      <th>Title</th>
-      <th>Slug</th>
-      <th>Nav</th>
-      <th>Status</th>
-      <th></th>
+      <th scope="col" colspan="2">Order</th>
+      <th scope="col">Title</th>
+      <th scope="col">Slug</th>
+      <th scope="col">Nav</th>
+      <th scope="col">Status</th>
+      <th scope="col"><span class="visually-hidden">Actions</span></th>
     </tr>
   </thead>
   <tbody>
@@ -23,38 +26,50 @@ admin_content %}
     <tr id="page-row-{{ page.id }}">
       <td>
         <button
+          type="button"
+          class="icon-btn"
           hx-post="/admin/pages/{{ page.id }}/reorder"
           hx-vals='{"direction": "up"}'
           {% if loop.first %}disabled{% endif %}
+          aria-label="Move page up"
         >
-          &uarr;
+          <Icon name="up" />
         </button>
+      </td>
+      <td>
         <button
+          type="button"
+          class="icon-btn"
           hx-post="/admin/pages/{{ page.id }}/reorder"
           hx-vals='{"direction": "down"}'
           {% if loop.last %}disabled{% endif %}
+          aria-label="Move page down"
         >
-          &darr;
+          <Icon name="down" />
         </button>
       </td>
       <td><a href="/admin/pages/{{ page.id }}/edit">{{ page.title }}</a></td>
       <td><code>{{ page.slug }}</code></td>
       <td>
-        {% if page.is_homepage %}<mark>home</mark>
-        {% elif page.show_in_nav %}&#x2713; {% else %}&mdash;{% endif %}
+        {% if page.is_homepage %}<StatusBadge status="home" />
+        {% elif page.show_in_nav %}<StatusBadge status="active" label="in nav" />
+        {% else %}<StatusBadge status="inactive" />{% endif %}
       </td>
       <td>
-        {% if page.published %}<ins>published</ins>{% else %}<del>draft</del>{%
-        endif %}
+        {% if page.published %}<StatusBadge status="published" />
+        {% else %}<StatusBadge status="draft" />{% endif %}
       </td>
       <td>
         <button
+          type="button"
+          class="icon-btn icon-btn--danger"
           hx-post="/admin/pages/{{ page.id }}/delete"
           hx-target="#page-row-{{ page.id }}"
           hx-swap="outerHTML"
           hx-confirm='Delete "{{ page.title }}"?'
+          aria-label="Delete page"
         >
-          Delete
+          <Icon name="trash" />
         </button>
       </td>
     </tr>
@@ -63,5 +78,10 @@ admin_content %}
 </table>
 </div>
 {% else %}
-<p>No pages yet. <a href="/admin/pages/new">Create one &rarr;</a></p>
+<EmptyState
+  title="No pages yet"
+  body="Pages are Jinja2 templates. The first one you create becomes the homepage."
+  cta_url="/admin/pages/new"
+  cta_label="Create your first page"
+/>
 {% endif %} {% endblock %}

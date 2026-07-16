@@ -33,7 +33,7 @@ async def get_active_theme() -> dict[str, Any] | None:
         await Theme.select()
         .where(Theme.active.eq(True))
         .first()
-        
+
     )
 
 
@@ -76,7 +76,8 @@ async def resolve_homepage() -> dict[str, Any] | None:
 
 
 async def _get_site_head() -> str | None:
-    """Load the site_head setting (extra HTML for <head>)."""
+    """Load the site-level site_head setting (theme-independent
+    extra HTML for <head>: analytics, meta tags, fonts)."""
     row = await (
         SiteSettings.select(SiteSettings.value)
         .where(SiteSettings.key == "site_head")
@@ -84,6 +85,29 @@ async def _get_site_head() -> str | None:
     )
     val = (row.get("value", "") or "") if row else ""
     return val or None
+
+
+# Historical default: Pico classless was hardcoded in layout/base.html.
+# Now each theme carries its own framework key; this is the fallback.
+_DEFAULT_CSS_FRAMEWORK = "pico"
+
+
+def _css_framework_html(key: str | None) -> str:
+    """Resolve a theme's CSS framework *key* to its <head> HTML.
+
+    *key* comes from the active theme's ``css_framework`` column (a key
+    from ``cms.css_frameworks.CSS_FRAMEWORKS``). Empty/unset falls back
+    to ``"pico"``; ``"none"`` yields an empty string so the theme ships
+    no base framework; an unknown key also yields empty.
+    """
+    key = (key or "").strip() or _DEFAULT_CSS_FRAMEWORK
+    if key == "none":
+        return ""
+    from cms.css_frameworks import CSS_FRAMEWORKS
+    for fw_key, _name, head_html in CSS_FRAMEWORKS:
+        if fw_key == key:
+            return head_html
+    return ""  # unknown key → no framework
 
 
 async def _get_logo_url() -> str | None:
@@ -100,15 +124,21 @@ async def _get_logo_url() -> str | None:
     return _media_url(filename)
 
 
-async def render_page(page: dict[str, Any]) -> str:
+async def render_page(
+    page: dict[str, Any], extra_context: dict[str, Any] | None = None
+) -> str:
     """Full pipeline: render body as Jinja template → wrap in theme.
+
+    *extra_context* is merged into the body's Jinja context — used by
+    error/status pages to expose ``status_code``, ``error`` etc.
 
     Returns a complete HTML document string.
     """
     await ensure_fresh_backend()
     await ensure_fresh_site_dict()
-    content_html = await render(page["body"])
 
+    # Resolve the theme first — a page may pin its own theme, else the
+    # active theme wraps it.
     theme = None
     if page.get("theme"):
         theme = (
@@ -118,11 +148,19 @@ async def render_page(page: dict[str, Any]) -> str:
         )
     if theme is None:
         theme = await get_active_theme()
+
+    # Content always comes from the page body. Themes provide chrome
+    # (base_template) and styling (css) only — never content. A page may
+    # pick a different theme via Page.theme (resolved above); that is the
+    # page choosing its skin, not a theme injecting content.
+    content_html = await render(page["body"], extra_context)
+
     if theme is None:
         return content_html
 
     nav = await get_nav_items()
     site_head = await _get_site_head()
+    css_framework_html = _css_framework_html(theme.get("css_framework"))
     logo = await _get_logo_url()
 
     return await render_themed(
@@ -132,6 +170,8 @@ async def render_page(page: dict[str, Any]) -> str:
         content_html=content_html,
         nav_items=nav,
         site_head=site_head,
+        theme_site_head=theme.get("site_head", ""),
+        css_framework_html=css_framework_html,
         logo=logo,
     )
 
@@ -214,6 +254,7 @@ async def render_item(
 
     nav = await get_nav_items()
     site_head = await _get_site_head()
+    css_framework_html = _css_framework_html(theme.get("css_framework"))
     logo = await _get_logo_url()
     return await render_themed(
         base_template=theme["base_template"],
@@ -222,6 +263,8 @@ async def render_item(
         content_html=content_html,
         nav_items=nav,
         site_head=site_head,
+        theme_site_head=theme.get("site_head", ""),
+        css_framework_html=css_framework_html,
         logo=logo,
     )
 
@@ -231,6 +274,7 @@ async def render_item(
 
 async def render_md_page(
     content_html: str, title: str, layout_source: str | None = None,
+    current_path: str = "",
 ) -> str:
     """Render pre-converted markdown HTML through the active theme.
 
@@ -245,7 +289,12 @@ async def render_md_page(
     # Render through the markdown layout if one was found.
     if layout_source:
         content_html = await render(
-            layout_source, {"content": Markup(content_html), "title": title},
+            layout_source,
+            {
+                "content": Markup(content_html),
+                "title": title,
+                "current_path": current_path,
+            },
         )
 
     theme = await get_active_theme()
@@ -254,6 +303,7 @@ async def render_md_page(
 
     nav = await get_nav_items()
     site_head = await _get_site_head()
+    css_framework_html = _css_framework_html(theme.get("css_framework"))
     logo = await _get_logo_url()
 
     return await render_themed(
@@ -263,6 +313,8 @@ async def render_md_page(
         content_html=content_html,
         nav_items=nav,
         site_head=site_head,
+        theme_site_head=theme.get("site_head", ""),
+        css_framework_html=css_framework_html,
         logo=logo,
     )
 

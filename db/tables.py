@@ -35,6 +35,12 @@ class Theme(Table, tablename="themes"):
     slug = Varchar(length=255, unique=True, required=True)
     base_template = Text(required=True)
     css = Text(default="")
+    # Base classless CSS framework key (from cms.css_frameworks) linked
+    # ahead of the theme's own styles. ``"none"`` links nothing.
+    css_framework = Varchar(length=255, default="pico")
+    # Theme-specific <head> HTML (CSS engine, fonts, theme meta).
+    # Combined with the site-level ``site_head`` setting at render time.
+    site_head = Text(default="")
     active = Boolean(default=False)
     created_at = Timestamptz()
     updated_at = Timestamptz(auto_update=_utcnow)

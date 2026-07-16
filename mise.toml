@@ -1,0 +1,23 @@
+# mise — repo-level tool versions.
+# https://mise.jdx.dev/configuration.html
+#
+# Run `mise install` once to fetch the pinned tools. After that, every
+# shell that `cd`s into the repo gets the right Python + uv on PATH
+# automatically (and `uv sync` resolves the rest). Use `mise --cd
+# /path/to/repo exec -- python --version` to verify.
+#
+# `.python-version` (3.13) is kept for backwards compatibility with
+# pyenv and tools that read it; mise honours both.
+
+[tools]
+python = "3.13"
+uv = "0.11"
+
+[env]
+# Make sure uv knows to use the project-local venv and not pollute
+# the workspace with extra interpreters when sync'd.
+UV_PROJECT_ENVIRONMENT = ".venv"
+# Force uv to use a Python interpreter from mise's installs/python
+# rather than fetching its own on first run. Keeps the toolchain
+# reproducible.
+UV_PYTHON = ".venv/bin/python"

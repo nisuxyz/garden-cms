@@ -34,8 +34,9 @@ def test_login_with_wrong_password_does_not_authenticate(http_client):
     )
     # Wrong password → stays on login page (200 with error), not a redirect.
     assert resp.status_code == 200
-    # Dashboard should still be guarded.
-    dash = http_client.get("/admin/")
+    # Dashboard should still be guarded — unauthenticated access redirects
+    # to the login page (don't follow it, so we observe the guard directly).
+    dash = http_client.get("/admin/", follow_redirects=False)
     assert dash.status_code in (302, 401, 403)
 
 
@@ -163,6 +164,17 @@ def test_admin_create_page(http_client):
     pub = http_client.get("/test-page-http")
     assert pub.status_code == 200
     assert "Hello from test" in pub.text
+
+
+def test_admin_page_form_exposes_theme_override(http_client):
+    """The page editor exposes the per-page theme override (Page.theme):
+    a 'Use active theme' default plus one option per seeded theme."""
+    _login(http_client)
+    resp = http_client.get("/admin/pages/new")
+    assert resp.status_code == 200
+    assert 'name="theme"' in resp.text
+    assert "Use active theme" in resp.text
+    assert "Nightshade" in resp.text  # a seeded theme is offered
 
 
 def test_admin_themes_list_renders(http_client):

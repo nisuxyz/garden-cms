@@ -1,24 +1,25 @@
-{% extends "layout/admin.html" %} {% block title %}{{ collection.name }} —
-Items{% endblock %} {% block admin_content %}
-<hgroup>
+{% extends "layout/admin.html" %} {% block title %}{{ collection.name }} — Items · Garden CMS{% endblock %}
+{% block admin_content %}
+<div class="page-header">
   <h2>{{ collection.name }}</h2>
-  <p>
-    <a href="/admin/collections/{{ collection.id }}/items/new">New item</a>
+  <div class="page-header__actions">
     <a href="/admin/collections/{{ collection.id }}/edit">Edit collection</a>
-  </p>
-</hgroup>
+    <a role="button" href="/admin/collections/{{ collection.id }}/items/new">New item</a>
+  </div>
+</div>
 
 {% if items %}
 <div class="table-scroll">
 <table>
+  <caption class="visually-hidden">Items in {{ collection.name }} ordered by sort position</caption>
   <thead>
     <tr>
-      <th></th>
-      <th>Title</th>
-      <th>Slug</th>
-      <th>Featured</th>
-      <th>Status</th>
-      <th></th>
+      <th scope="col" colspan="2">Order</th>
+      <th scope="col">Title</th>
+      <th scope="col">Slug</th>
+      <th scope="col">Featured</th>
+      <th scope="col">Status</th>
+      <th scope="col"><span class="visually-hidden">Actions</span></th>
     </tr>
   </thead>
   <tbody>
@@ -26,40 +27,51 @@ Items{% endblock %} {% block admin_content %}
     <tr id="item-row-{{ item.id }}">
       <td>
         <button
+          type="button"
+          class="icon-btn"
           hx-post="/admin/collections/{{ collection.id }}/items/{{ item.id }}/reorder"
           hx-vals='{"direction": "up"}'
           {% if loop.first %}disabled{% endif %}
+          aria-label="Move item up"
         >
-          &uarr;
+          <Icon name="up" />
         </button>
+      </td>
+      <td>
         <button
+          type="button"
+          class="icon-btn"
           hx-post="/admin/collections/{{ collection.id }}/items/{{ item.id }}/reorder"
           hx-vals='{"direction": "down"}'
           {% if loop.last %}disabled{% endif %}
+          aria-label="Move item down"
         >
-          &darr;
+          <Icon name="down" />
         </button>
       </td>
       <td>
-        <a
-          href="/admin/collections/{{ collection.id }}/items/{{ item.id }}/edit"
-          >{{ item.title }}</a
-        >
+        <a href="/admin/collections/{{ collection.id }}/items/{{ item.id }}/edit">{{ item.title }}</a>
       </td>
       <td><code>{{ item.slug }}</code></td>
-      <td>{% if item.featured %}&starf;{% else %}&mdash;{% endif %}</td>
       <td>
-        {% if item.published %}<ins>published</ins>{% else %}<del>draft</del>{%
-        endif %}
+        {% if item.featured %}<StatusBadge status="active" label="featured" />
+        {% else %}<StatusBadge status="inactive" />{% endif %}
+      </td>
+      <td>
+        {% if item.published %}<StatusBadge status="published" />
+        {% else %}<StatusBadge status="draft" />{% endif %}
       </td>
       <td>
         <button
+          type="button"
+          class="icon-btn icon-btn--danger"
           hx-post="/admin/collections/{{ collection.id }}/items/{{ item.id }}/delete"
           hx-target="#item-row-{{ item.id }}"
           hx-swap="outerHTML"
           hx-confirm='Delete "{{ item.title }}"?'
+          aria-label="Delete item"
         >
-          Delete
+          <Icon name="trash" />
         </button>
       </td>
     </tr>
@@ -68,10 +80,10 @@ Items{% endblock %} {% block admin_content %}
 </table>
 </div>
 {% else %}
-<p>
-  No items yet.
-  <a href="/admin/collections/{{ collection.id }}/items/new"
-    >Create one &rarr;</a
-  >
-</p>
+<EmptyState
+  title="No items in this collection"
+  body="Add an entry to get started — fields are defined by the collection schema."
+  cta_url="/admin/collections/{{ collection.id }}/items/new"
+  cta_label="Create your first item"
+/>
 {% endif %} {% endblock %}

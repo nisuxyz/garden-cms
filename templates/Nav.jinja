@@ -1,5 +1,0 @@
-{#def items #} {#- Render navigation links. Usage:
-<nav :items="nav_items" />
--#} {% for item in items %}
-<li><a href="{{ item.url }}">{{ item.title | lower }}</a></li>
-{% endfor %}

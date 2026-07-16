@@ -1,60 +1,75 @@
-{% extends "layout/base.html" %} {% block title %}admin login{% endblock %} {%
-block head %} {{ super() }}
-<style>
-  main article {
-    max-width: 24rem;
-    margin: 4rem auto;
-  }
-</style>
-{% endblock %} {% block body %}
-<main>
-  <article>
-    <header><h2>admin</h2></header>
-    {% if error %}
-    <p><mark>{{ error }}</mark></p>
-    {% endif %} {% if oauth_enabled %}
-    <a href="/admin/oauth/authorize">{{ oauth_provider_name }}</a>
-    <hr />
-    <details>
-      <summary>sign in with password</summary>
-      {% endif %}
+{% extends "layout/base.html" %}
+{% block title %}Sign in · Garden CMS{% endblock %}
+{% block head %}
+  {{ super() }}
+  <link rel="stylesheet" href="/static/admin.css?v=1" />
+{% endblock %}
 
-      <form method="post" action="/admin/login">
-        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}" />
-        <label>
-          Username
-          <input
-            type="text"
-            name="username"
-            autocomplete="username"
-            {%
-            if
-            not
-            oauth_enabled
-            %}autofocus{%
-            endif
-            %}
-          />
-        </label>
-        <label>
-          Password
-          <input
-            type="password"
-            name="password"
-            autocomplete="current-password"
-            required
-          />
-        </label>
-        <small
-          >Leave username blank to authenticate with the legacy env-var
-          password.</small
-        >
-        <button type="submit">Log in</button>
-      </form>
+{% block body %}
+  <main class="admin-main">
+    <section>
+      <article class="login-card">
+        <div class="login-card__brand">
+          <img src="/static/logo.svg" alt="" />
+          <strong>Garden CMS</strong>
+        </div>
 
-      {% if oauth_enabled %}
-    </details>
-    {% endif %}
-  </article>
-</main>
+        {% if error %}
+        <p><mark>{{ error }}</mark></p>
+        {% endif %}
+
+        {% if oauth_enabled %}
+          <a role="button" href="/admin/oauth/authorize">
+            Continue with {{ oauth_provider_name }}
+          </a>
+
+          <div class="login-card__divider">or sign in with the admin password</div>
+
+          <form method="post" action="/admin/login">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}" />
+            <label>
+              Username
+              <input type="text" name="username" autocomplete="username" />
+            </label>
+            <label>
+              Password
+              <input
+                type="password"
+                name="password"
+                autocomplete="current-password"
+                autofocus
+                required
+              />
+            </label>
+            <small>Or skip the username to use the configured admin password.</small>
+            <button type="submit">Log in</button>
+          </form>
+        {% else %}
+          <form method="post" action="/admin/login">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}" />
+            <label>
+              Username
+              <input
+                type="text"
+                name="username"
+                autocomplete="username"
+                autofocus
+              />
+            </label>
+            <label>
+              Password
+              <input
+                type="password"
+                name="password"
+                autocomplete="current-password"
+                required
+              />
+            </label>
+            <small>Or skip the username to use the configured admin password.</small>
+            <button type="submit">Log in</button>
+          </form>
+        {% endif %}
+      </article>
+    </section>
+  </main>
 {% endblock %}
