@@ -1591,7 +1591,30 @@ async def db_lifespan(app: Litestar) -> AsyncGenerator[None]:
 
     engine: PostgresEngine = DB
 
-    await engine.start_connection_pool(max_inactive_connection_lifetime=300)
+    # Pool tuning for a serverless Postgres (Neon), whose compute suspends
+    # after a few minutes idle and drops every server connection with it.
+    #
+    # asyncpg defaults to min_size=10, so the pool would hold ten connections
+    # open indefinitely and keep replacing them to maintain that floor. When
+    # the compute suspends, those sockets are left half-open: the proxy still
+    # accepts them but nothing answers, so the next query blocks forever with
+    # no command timeout. Every DB-backed route then hangs — including the
+    # 404/500 handler, which renders a DB-backed status page, so even a
+    # missing static file hangs instead of erroring.
+    #
+    # min_size=0 lets the pool empty out while the site is idle, and the
+    # short inactive lifetime retires connections well before the compute's
+    # suspend window, so a request after an idle period opens a fresh
+    # connection (which transparently wakes the compute) instead of reusing
+    # a dead one. command_timeout is the backstop: if a connection does go
+    # stale mid-flight, the query fails fast and the request returns an error
+    # rather than hanging until the client gives up.
+    await engine.start_connection_pool(
+        min_size=0,
+        max_size=10,
+        max_inactive_connection_lifetime=120,
+        command_timeout=15,
+    )
     try:
         await init_db()
         # Initialise the storage backend from DB settings.
