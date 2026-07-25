@@ -1332,24 +1332,38 @@ _DEFAULT_CONTENT_BLOCKS = [
     ("contact.intro", "Contact Intro", "html", "Have a question or want to say hello?"),
 ]
 
+# ``item.body`` holds trusted HTML authored in the admin, and the production
+# Jinja env autoescapes — so it must be piped through ``| safe`` or it renders
+# as visible escaped markup. ``item.data`` values are plain strings (unlike
+# ContentBlock html values, which arrive pre-wrapped in ``Markup``).
+# Everything else — title, summary, tags — is plain text and stays escaped.
+
 _BLOG_CARD_TEMPLATE = """\
 <article>
   <header>
     <h3><a href="/blog/{{ item.slug }}">{{ item.title }}</a></h3>
-    <small class="meta">{{ item.created_at }}</small>
+    <small class="meta">{{ item.created_at | dateformat }}</small>
   </header>
   <p>{{ item.summary }}</p>
-  <footer>{{ item.tags }}</footer>
+  {%- set tags = item.tags | taglist %}
+  {%- if tags %}
+  <footer>{% for tag in tags %}<span class="tag">{{ tag }}</span>{% endfor %}</footer>
+  {%- endif %}
 </article>
 """
 
 _BLOG_DETAIL_TEMPLATE = """\
-<h1>{{ item.title }}</h1>
-<small class="meta">{{ item.created_at }}</small>
-<p>{{ item.summary }}</p>
-<hr>
-{{ item.body }}
-<p>{{ item.tags }}</p>
+<article>
+  <h1>{{ item.title }}</h1>
+  <small class="meta">{{ item.created_at | dateformat }}</small>
+  <p>{{ item.summary }}</p>
+  <hr>
+  {{ item.body | safe }}
+  {%- set tags = item.tags | taglist %}
+  {%- if tags %}
+  <footer>{% for tag in tags %}<span class="tag">{{ tag }}</span>{% endfor %}</footer>
+  {%- endif %}
+</article>
 """
 
 _PROJECT_CARD_TEMPLATE = """\
@@ -1358,16 +1372,34 @@ _PROJECT_CARD_TEMPLATE = """\
     <h3><a href="/projects/{{ item.slug }}">{{ item.title }}</a></h3>
   </header>
   <p>{{ item.summary }}</p>
-  <footer>{{ item.tags }}</footer>
+  {%- set tags = item.tags | taglist %}
+  {%- if tags %}
+  <footer>{% for tag in tags %}<span class="tag">{{ tag }}</span>{% endfor %}</footer>
+  {%- endif %}
 </article>
 """
 
 _PROJECT_DETAIL_TEMPLATE = """\
-<h1>{{ item.title }}</h1>
-<p>{{ item.summary }}</p>
-<hr>
-{{ item.body }}
-<p>{{ item.tags }}</p>
+<article>
+  <h1>{{ item.title }}</h1>
+  <p>{{ item.summary }}</p>
+  {%- if item.url or item.repo_url %}
+  <p class="project-links">
+    {%- if item.url %}
+    <a href="{{ item.url }}" target="_blank" rel="noopener noreferrer">&#8599; live</a>
+    {%- endif %}
+    {%- if item.repo_url %}
+    <a href="{{ item.repo_url }}" target="_blank" rel="noopener noreferrer">source &#8599;</a>
+    {%- endif %}
+  </p>
+  {%- endif %}
+  <hr>
+  {{ item.body | safe }}
+  {%- set tags = item.tags | taglist %}
+  {%- if tags %}
+  <footer>{% for tag in tags %}<span class="tag">{{ tag }}</span>{% endfor %}</footer>
+  {%- endif %}
+</article>
 """
 
 _HOME_PAGE = """\

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import asyncio
 from contextvars import ContextVar
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -112,6 +113,59 @@ def _media_url(filename: str) -> str:
     return get_backend().url(filename)
 
 
+# ── Template filters ───────────────────────────────────────
+
+
+def _taglist(value: Any) -> list[str]:
+    """Normalise a ``list``-type collection field into a list of tags.
+
+    The admin UI stores ``list`` fields as a single comma-separated string
+    (``templates/admin/item_edit.html``), but content imported from elsewhere
+    may still hold a real JSON array — accept both, and tolerate a missing
+    field (Jinja ``Undefined``) since ``tags`` is optional in the seeded
+    schemas. Blank segments are dropped so ``"a, ,b"`` yields two tags.
+    """
+    if isinstance(value, str):
+        parts = value.split(",")
+    elif isinstance(value, (list, tuple)):
+        parts = [str(v) for v in value]
+    else:
+        # None, Undefined, or anything unexpected — render nothing.
+        return []
+    return [p.strip() for p in parts if p and p.strip()]
+
+
+def _dateformat(value: Any, fmt: str = "%Y-%m-%d") -> str:
+    """Format a timestamp for display, defaulting to ``YYYY-MM-DD``.
+
+    Postgres hands back ``datetime`` objects while SQLite hands back strings,
+    so accept either. Unparseable values fall back to the first 10 characters,
+    which is the ISO date prefix for any reasonable timestamp string.
+    """
+    if hasattr(value, "strftime"):
+        return value.strftime(fmt)
+    if not isinstance(value, str):
+        return ""
+    text = value.strip()
+    if not text:
+        return ""
+    try:
+        return datetime.fromisoformat(text.replace(" ", "T", 1)).strftime(fmt)
+    except ValueError:
+        return text[:10]
+
+
+def register_filters(env: Environment) -> None:
+    """Register the CMS template filters on *env*.
+
+    Exposed separately from ``init_catalog`` so tests (and any future
+    non-catalog env) can get the same filter set without building a
+    full JinjaX catalog.
+    """
+    env.filters["taglist"] = _taglist
+    env.filters["dateformat"] = _dateformat
+
+
 # ── Catalog init ───────────────────────────────────────────
 
 
@@ -167,11 +221,12 @@ def init_catalog(jinja_env: Environment) -> jinjax.Catalog:
         merged = _renderer.unpack_item_data(item)
         return _renderer.render_sync(template_str, {"item": merged})
 
-    # Register globals on both envs.
+    # Register globals and filters on both envs.
     for env in (cat_env, jinja_env):
         env.globals["site"] = _site_dict
         env.globals["media_url"] = _media_url
         env.globals["fetch_collection"] = fetch_collection
         env.globals["_render_card"] = _render_card
+        register_filters(env)
 
     return catalog

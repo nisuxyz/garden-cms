@@ -12,6 +12,7 @@ wheels/
 
 # Env and data files
 .env
+.env.prod
 data/*.db
 data/site.db/
 data/media/
